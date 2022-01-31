@@ -173,3 +173,19 @@ python_version = "3.8"
 # install global python dependencies
 $ pipenv install --system
 
+
+$ cd /data/openpilot
+
+# install dependencies
+$ ./tools/ubuntu_setup.sh
+
+# you also need to look inside ubuntu_setup.sh to see how I installed/built from source other dependencies..
+# sorry I didn't spend the time to make this work nice! I would if it had all worked...
+
+# build acados from source too.
+# install rust/cargo with rustup
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+$ source $HOME/.cargo/env
+
+$ cd third_party/acados
+$ ./build.sh
