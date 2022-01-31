@@ -1,0 +1,175 @@
+# incognitojam
+# 31-01-2022
+
+# You should clone openpilot to /userdata/openpilot and create directories for "persist", "params", "realdata", "log" and "scons_cache"
+# All of them will need the correct permissions for openpilot to read/write to
+# I used the fstab to mount these to the /data directory too (which is unfortunately itself readonly, as it is technically inside the
+# android container, which is read-only). /etc/fstab gets generated after boot, so you have to use /lib/init/fstab instead.
+
+# I modified tools/ubuntu_setup.sh to include "functions" for installing all of the dependencies that I needed to build OP... The script
+# itself isn't actually working to install of these things, but you can look at the commands I wrote for inspiration. I didn't take the
+# time to clean it up because I couldn't actually get it to work myself.
+
+# I managed to get OP to build and "run", but Qt couldn't take control of the display server (Mir on Ubuntu Touch, at least on this
+# platform - on other platforms, like the Pine Phone, Wayland is used instead).
+
+# I couldn't get thneed/omx to work so I commented out the relevant parts of the code, and I used the --no-thneed argument to scons.
+
+# Mount root/system as rw
+$ sudo mount -o rw,remount /
+
+$ cat /lib/init/fstab
+# /lib/init/fstab: static file system information.
+#
+# These are the filesystems that are always mounted on boot, you can
+# override any of these by copying the appropriate line from this file into
+# /etc/fstab and tweaking it as you see fit.  See fstab(5).
+#
+# <file system> <mount point>             <type>          <options>                               <dump> <pass>
+/dev/root       /                         rootfs          defaults                                     0 1
+none            /proc                     proc            nodev,noexec,nosuid                          0 0
+none            /proc/sys/fs/binfmt_misc  binfmt_misc     nodev,noexec,nosuid,optional                 0 0
+none            /sys                      sysfs           nodev,noexec,nosuid                          0 0
+none            /sys/fs/cgroup            tmpfs           optional,uid=0,gid=0,mode=0755,size=1024     0 0
+none            /sys/fs/fuse/connections  fusectl         optional                                     0 0
+none            /sys/kernel/debug         debugfs         optional                                     0 0
+none            /sys/kernel/security      securityfs      optional                                     0 0
+none            /sys/firmware/efi/efivars efivarfs        optional                                     0 0
+none            /spu                      spufs           gid=spu,optional                             0 0
+none            /dev                      devtmpfs,tmpfs  mode=0755                                    0 0
+none            /dev/pts                  devpts          noexec,nosuid,gid=tty,mode=0620              0 0
+none            /tmp                      none            defaults                                     0 0
+none            /run                      tmpfs           noexec,nosuid,size=10%,mode=0755             0 0
+none            /run/lock                 tmpfs           nodev,noexec,nosuid,size=5242880             0 0
+none            /run/shm                  tmpfs           nosuid,nodev                                 0 0
+none            /run/user                 tmpfs           nodev,noexec,nosuid,size=104857600,mode=0755 0 0
+none            /sys/fs/pstore            pstore          optional                                     0 0
+/userdata/root/usr /usr                   auto            bind,suid                                 0 0
+/userdata/root/var /var                   none            bind                                 0 0
+/userdata/openpilot /data/openpilot       none            bind                                 0 0
+/userdata/persist /data/persist           none            bind                                 0 0
+/userdata/params /data/params             none            bind                                 0 0
+/userdata/realdata /data/media/0/realdata none            bind                                 0 0
+/userdata/log   /data/log                 none            bind                                 0 0
+
+$ ls -al /userdata
+total 56
+drwxr-xr-x  13 root    root    4096 Jan 30 23:13 .
+drwxrwxrwx  25 root    root    4096 Jan 30 20:30 ..
+drwxrwx--x  57 system  system  4096 Jan  3  1970 android-data
+drwx------   4 root    root    4096 Jan  2  1970 cache
+-rw-r--r--   1 root    root       4 Jan  2  1970 .last_ubuntu-build
+-rw-r--r--   1 root    root       0 Jan 30 23:13 .last_watchdog_reboot
+drwxrwxrwx   2 root    root    4096 Jan 30 21:44 log
+drwxr-xr-x  20 phablet phablet 4096 Jan 31 21:55 openpilot
+drwxrwxrwx   3 root    root    4096 Jan 30 21:44 params
+drwxrwxrwx   3 root    root    4096 Jan 30 20:33 persist
+drwxrwxrwx   3 root    root    4096 Jan 30 20:47 realdata
+drwxr-xr-x   4 root    root    4096 Jan 29 23:40 root
+drwxrwxrwx 219 root    root    4096 Jan 30 17:45 scons_cache
+drwxr-xr-x   5 root    root    4096 Jan  2  1970 system-data
+drwxr-xr-x   3 root    root    4096 Jan  2  1970 user-data
+
+$ cat /home/phablet/.bashrc
+
+# omitted existing stuff
+
+export ANDROID_DATA=
+source /data/openpilot/tools/openpilot_env.sh
+
+# all the comforts of home
+alias ll="ls -al"
+alias l='ls -lah'
+alias gup='git pull --rebase'
+alias gl='git pull'
+alias gp='git push'
+alias gcam='git commit -a -m'
+alias gst='git status'
+alias gco='git checkout'
+alias gsu='git submodule update'
+alias more='less'
+
+# everyone wants to start here anyway
+[ -d "/data/openpilot" ] && cd /data/openpilot
+
+
+# Pipfile and Pipfile.lock from commaai/neos-builder
+$ cd /home/phablet
+$ cat Pipfile
+
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+ipython = "*"
+azure-core = "*"
+azure-common = "*"
+azure-storage-blob = "~=2.1"
+azure-storage-common = "~=2.1"
+pycurl = "*"
+git-pylint-commit-hook = "*"
+tenacity = "*"
+mock = "*"
+dictdiffer = "*"
+aenum = "*"
+coverage = "*"
+paramiko = "*"
+lru-dict = "*"
+pprofile = "*"
+pyprof2calltree = "*"
+pre-commit = "*"
+mypy = "*"
+parameterized = "*"
+inputs = "*"
+casadi = "*"
+future-fstrings = "*"  # needed for acados for now
+
+[packages]
+"Jinja2" = "*"
+Cython = "*"
+Flask = "*"
+PyJWT = "*"
+PyYAML = "*"
+atomicwrites = "*"
+cffi = "*"
+crcmod = "*"
+cryptography = "*"
+cysignals = "*"
+dbus-python = "*"
+flake8 = "*"
+gunicorn = "*"
+hexdump = "*"
+json-rpc = "*"
+libusb1 = "*"
+markdown-it-py = "*"
+nose = "*"
+numpy = "*"
+pillow = "*"
+psutil = "*"
+pycapnp = "==1.1.0"
+pycryptodome = "*"
+pylint = "*"
+pyserial = "*"
+python-dateutil = "*"
+pyzmq = "*"
+requests = "*"
+scons = "*"
+sentry-sdk = "*"
+setproctitle = "*"
+six = "*"
+smbus2 = "*"
+sympy = "!=1.6.1"
+timezonefinder = "*"
+tqdm = "*"
+urllib3 = "*"
+utm = "*"
+websocket_client = "*"
+
+[requires]
+python_version = "3.8"
+
+# install global python dependencies
+$ pipenv install --system
+
