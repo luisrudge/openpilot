@@ -1,4 +1,4 @@
-Import('env', 'arch', 'common', 'cereal', 'messaging')
+Import('env', 'arch', 'FRICI', 'common', 'cereal', 'messaging')
 
 if arch == "aarch64":
   env.Program('_sensord', 'sensors_qcom.cc', LIBS=['hardware', common, cereal, messaging, 'capnp', 'zmq', 'kj'])
@@ -17,6 +17,6 @@ else:
     'sensors/mmc5603nj_magn.cc',
   ]
   libs = [common, cereal, messaging, 'capnp', 'zmq', 'kj']
-  if arch == "larch64":
+  if arch == "larch64" and not FRICI:
     libs.append('i2c')
   env.Program('_sensord', ['sensors_qcom2.cc'] + sensors, LIBS=libs)

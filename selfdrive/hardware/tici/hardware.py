@@ -127,9 +127,10 @@ class Tici(HardwareBase):
 
   def get_sim_info(self):
     modem = self.get_modem()
-    sim_path = modem.Get(MM_MODEM, 'Sim', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
+    # sim_path = modem.Get(MM_MODEM, 'Sim', dbus_interface=DBUS_PROPS, timeout=TIMEOUT)
 
-    if sim_path == "/":
+    # if sim_path == "/":
+    if True:
       return {
         'sim_id': '',
         'mcc_mnc': None,
@@ -151,12 +152,14 @@ class Tici(HardwareBase):
     return ""
 
   def get_imei(self, slot):
-    if slot != 0:
+    if slot != 0 or True:
       return ""
 
     return str(self.get_modem().Get(MM_MODEM, 'EquipmentIdentifier', dbus_interface=DBUS_PROPS, timeout=TIMEOUT))
 
   def get_network_info(self):
+    return None
+
     modem = self.get_modem()
     try:
       info = modem.Command("AT+QNWINFO", math.ceil(TIMEOUT), dbus_interface=MM_MODEM, timeout=TIMEOUT)
@@ -197,7 +200,7 @@ class Tici(HardwareBase):
         return NetworkStrength.great
 
   def get_network_strength(self, network_type):
-    network_strength = NetworkStrength.unknown
+    return NetworkStrength.unknown
 
     try:
       if network_type == NetworkType.none:

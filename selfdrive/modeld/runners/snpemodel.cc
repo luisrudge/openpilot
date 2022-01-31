@@ -16,16 +16,16 @@ void PrintErrorStringAndExit() {
 SNPEModel::SNPEModel(const char *path, float *loutput, size_t loutput_size, int runtime) {
   output = loutput;
   output_size = loutput_size;
-#if defined(QCOM) || defined(QCOM2)
-  if (runtime==USE_GPU_RUNTIME) {
-    Runtime = zdl::DlSystem::Runtime_t::GPU;
-  } else if (runtime==USE_DSP_RUNTIME) {
-    Runtime = zdl::DlSystem::Runtime_t::DSP;
-  } else {
-    Runtime = zdl::DlSystem::Runtime_t::CPU;
-  }
-  assert(zdl::SNPE::SNPEFactory::isRuntimeAvailable(Runtime));
-#endif
+// #if defined(QCOM) || defined(QCOM2)
+//   if (runtime==USE_GPU_RUNTIME) {
+//     Runtime = zdl::DlSystem::Runtime_t::GPU;
+//   } else if (runtime==USE_DSP_RUNTIME) {
+//     Runtime = zdl::DlSystem::Runtime_t::DSP;
+//   } else {
+//     Runtime = zdl::DlSystem::Runtime_t::CPU;
+//   }
+//   assert(zdl::SNPE::SNPEFactory::isRuntimeAvailable(Runtime));
+// #endif
   model_data = util::read_file(path);
   assert(model_data.size() > 0);
 
@@ -37,18 +37,18 @@ SNPEModel::SNPEModel(const char *path, float *loutput, size_t loutput_size, int 
   // create model runner
   zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
   while (!snpe) {
-#if defined(QCOM) || defined(QCOM2)
+// #if defined(QCOM) || defined(QCOM2)
+//     snpe = snpeBuilder.setOutputLayers({})
+//                       .setRuntimeProcessor(Runtime)
+//                       .setUseUserSuppliedBuffers(true)
+//                       .setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE)
+//                       .build();
+// #else
     snpe = snpeBuilder.setOutputLayers({})
-                      .setRuntimeProcessor(Runtime)
                       .setUseUserSuppliedBuffers(true)
                       .setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE)
                       .build();
-#else
-    snpe = snpeBuilder.setOutputLayers({})
-                      .setUseUserSuppliedBuffers(true)
-                      .setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE)
-                      .build();
-#endif
+// #endif
     if (!snpe) std::cerr << zdl::DlSystem::getLastErrorString() << std::endl;
   }
 

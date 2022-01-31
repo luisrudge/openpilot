@@ -7,6 +7,10 @@ import platform
 import numpy as np
 
 TICI = os.path.isfile('/TICI')
+FRICI = os.path.isfile('/FRICI')
+
+Export('TICI', 'FRICI')
+
 Decider('MD5-timestamp')
 
 AddOption('--test',
@@ -88,7 +92,7 @@ if arch == "aarch64" or arch == "larch64":
   libpath = [
     "/usr/local/lib",
     "/usr/lib",
-    "/system/vendor/lib64",
+    #"/system/vendor/lib64",
     "/system/comma/usr/lib",
     f"#third_party/acados/{arch}/lib",
   ]
@@ -96,14 +100,18 @@ if arch == "aarch64" or arch == "larch64":
   if arch == "larch64":
     libpath += [
       "#third_party/snpe/larch64",
-      "#third_party/libyuv/larch64/lib",
-      "/usr/lib/aarch64-linux-gnu"
+      "#third_party/libyuv/larch64/lib",  # here
+      # "/usr/lib/aarch64-linux-gnu"
+      "/lib/aarch64-linux-gnu",
     ]
     cpppath += [
       "#selfdrive/camerad/include",
     ]
     cflags = ["-DQCOM2", "-mcpu=cortex-a57"]
     cxxflags = ["-DQCOM2", "-mcpu=cortex-a57"]
+    if TICI and not FRICI:
+      cflags += ["-DQI2C"]
+      cxxflags += ["-DQI2C"]
     rpath += ["/usr/local/lib"]
   else:
     rpath = []
@@ -183,7 +191,6 @@ env = Environment(
     "-fPIC",
     "-O2",
     "-Wunused",
-    "-Werror",
     "-Wshadow",
     "-Wno-unknown-warning-option",
     "-Wno-deprecated-register",
@@ -201,7 +208,7 @@ env = Environment(
     "#third_party/acados/include/hpipm/include",
     "#third_party/catch2/include",
     "#third_party/bzip2",
-    "#third_party/libyuv/include",
+    "#third_party/libyuv/include",  # here
     "#third_party/openmax/include",
     "#third_party/json11",
     "#third_party/curl/include",
@@ -317,11 +324,13 @@ elif arch == "aarch64":
   qt_libs += ['EGL', 'GLESv3', 'c++_shared']
 else:
   qt_env['QTDIR'] = "/usr"
+  qt_version = "5.12.9" if FRICI else "5.12.8"
   qt_dirs = [
     f"/usr/include/{real_arch}-linux-gnu/qt5",
-    f"/usr/include/{real_arch}-linux-gnu/qt5/QtGui/5.12.8/QtGui",
+    f"/usr/include/{real_arch}-linux-gnu/qt5/QtGui/{qt_version}/QtGui",
   ]
   qt_dirs += [f"/usr/include/{real_arch}-linux-gnu/qt5/Qt{m}" for m in qt_modules]
+  print("qt_dirs", qt_dirs)
 
   qt_libs = [f"Qt5{m}" for m in qt_modules]
   if arch == "larch64":

@@ -2,6 +2,9 @@
 
 set -e
 
+ANDROID_DATA_BACKUP=$ANDROID_DATA
+export ANDROID_DATA=
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd $DIR
 
@@ -52,3 +55,5 @@ if [ -f "$DIR/.pre-commit-config.yaml" ]; then
   [ -d "./notebooks" ] && (cd notebooks && $RUN pre-commit install)
   echo "pre-commit hooks installed"
 fi
+
+export ANDROID_DATA=$ANDROID_DATA_BACKUP

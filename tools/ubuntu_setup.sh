@@ -7,6 +7,127 @@ ROOT="$(cd $DIR/../ && pwd)"
 
 # NOTE: this is used in a docker build, so do not run any scripts here.
 
+function install_git_lfs_linux_arm64() {
+  pushd /tmp
+  wget https://github.com/git-lfs/git-lfs/releases/download/v3.0.2/git-lfs-linux-arm64-v3.0.2.tar.gz
+  tar -xvf git-lfs-linux-arm64-v3.0.2.tar.gz
+  ./install.sh
+  popd
+}
+
+function install_toolchain_xenial() {
+  sudo apt-get install -y clang-8 software-properties-common
+  sudo apt-get update
+  sudo rm /usr/bin/clang /usr/bin/clang++
+  sudo ln -s /usr/bin/clang-8 /usr/bin/clang
+  sudo ln -s /usr/bin/clang++-8 /usr/bin/clang++
+
+  sudo apt-get install -y g++-8
+  sudo rm /usr/bin/gcc /usr/bin/g++
+  sudo ln -s /usr/bin/gcc-8 /usr/bin/gcc
+  sudo ln -s /usr/bin/g++-8 /usr/bin/g++
+}
+
+function install_capnp() {
+  CAPNP_VERSION=0.8.0
+
+  pushd /tmp
+  curl -O https://capnproto.org/capnproto-c++-$CAPNP_VERSION.tar.gz
+  tar zxf capnproto-c++-$CAPNP_VERSION.tar.gz
+
+  pushd capnproto-c++-$CAPNP_VERSION
+  ./configure
+  make -j7 check
+  sudo make install
+  popd
+
+  popd
+}
+
+function install_libi2c() {
+  # we just skip i2c ifdef
+  sudo apt-get install -y libi2c-dev  # don't think it works
+  sudo apt-get install -y linux-headers-4.4.0-1156-snapdragon  # don't think it works
+}
+
+function install_libgsl() {
+  # /usr/lib/aarch64-linux-gnu/libgsl.so
+  # /usr/lib/aarch64-linux-gnu/libgsl.so.19
+  # /usr/lib/aarch64-linux-gnu/libgsl.so.19.0.0
+
+  # sudo apt-file search libgsl.so
+  sudo apt-get install -y libgsl-dev  # libgsl2
+}
+
+function install_libcb() {
+  # /usr/lib/aarch64-linux-gnu/libCB.so
+
+  # sudo apt-file search libCB.so
+  # sudo apt-get install -y libCB.so
+  sudo ln -s /android/vendor/lib64/libCB.so /usr/lib/aarch64-linux-gnu/libCB.so
+}
+
+function install_ffmpeg() {
+  pushd /tmp
+  wget https://ffmpeg.org/releases/ffmpeg-4.2.2.tar.bz2
+  tar xvf ffmpeg-4.2.2.tar.bz2
+
+  pushd ffmpeg-4.2.2
+  ./configure --enable-shared --disable-static
+  make -j$(nproc)
+  sudo make install
+  popd
+
+  popd
+}
+
+function install_omxcore() {
+  # /usr/lib/aarch64-linux-gnu/libOmxCore.so
+  # sudo ln -s /android/vendor/lib64/libOmxCore.so /usr/lib/aarch64-linux-gnu/libOmxCore.so
+}
+
+function install_qtbase5_private() {
+  # qpa/qplatformnativeinterface.h
+  sudo apt-get install -y qtbase5-private-dev
+}
+
+# cmake 3.10 (or above) required for building mapbox-gl-native
+function build_cmake() {
+  pushd /tmp
+  wget https://cmake.org/files/v3.14/cmake-3.14.4.zip
+  unzip cmake-3.14.4.zip
+
+  pushd cmake-3.14.4
+  cmake .
+  make -j$(nproc)
+  # sudo make install
+  popd
+
+  popd
+}
+
+function build_mapbox() {
+  build_cmake()
+
+  sudo apt install -y libqt5opengl5-dev
+
+  pushd /tmp
+  git clone --recursive https://github.com/commaai/mapbox-gl-native.git
+
+  pushd mapbox-gl-native
+  mkdir build
+
+  pushd build
+  /tmp/cmake-3.14.4/bin/cmake -DMBGL_WITH_QT=ON ..
+  make -j$(nproc) mbgl-qt
+  # sudo cp libqmapboxql.so /usr/local/lib
+  popd
+
+  popd
+
+  popd
+}
+
 # Install packages present in all supported versions of Ubuntu
 function install_ubuntu_common_requirements() {
   sudo apt-get update
@@ -29,8 +150,7 @@ function install_ubuntu_common_requirements() {
     curl \
     libcurl4-openssl-dev \
     git \
-    git-lfs \
-    ffmpeg \
+    # ffmpeg \
     libavformat-dev \
     libavcodec-dev \
     libavdevice-dev \

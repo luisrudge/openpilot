@@ -9,8 +9,8 @@
 static kj::Array<capnp::word> build_boot_log() {
   std::vector<std::string> bootlog_commands;
   if (Hardware::TICI()) {
-    bootlog_commands.push_back("journalctl");
-    bootlog_commands.push_back("sudo nvme smart-log --output-format=json /dev/nvme0");
+    bootlog_commands.push_back("dmesg");
+    // bootlog_commands.push_back("sudo nvme smart-log --output-format=json /dev/nvme0");
   } else if (Hardware::EON()) {
     bootlog_commands.push_back("logcat -d");
   }

@@ -24,13 +24,13 @@
 
 #include "selfdrive/loggerd/encoder.h"
 #include "selfdrive/loggerd/logger.h"
-#if defined(QCOM) || defined(QCOM2)
-#include "selfdrive/loggerd/omx_encoder.h"
-#define Encoder OmxEncoder
-#else
+// #if defined(QCOM) || defined(QCOM2)
+// #include "selfdrive/loggerd/omx_encoder.h"
+// #define Encoder OmxEncoder
+// #else
 #include "selfdrive/loggerd/raw_logger.h"
 #define Encoder RawLogger
-#endif
+// #endif
 
 constexpr int MAIN_FPS = 20;
 const int MAIN_BITRATE = Hardware::TICI() ? 10000000 : 5000000;
