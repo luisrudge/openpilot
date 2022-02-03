@@ -1,5 +1,6 @@
-# incognitojam
-# 31-01-2022
+incognitojam
+31-01-2022
+==========
 
 # You should clone openpilot to /userdata/openpilot and create directories for "persist", "params", "realdata", "log" and "scons_cache"
 # All of them will need the correct permissions for openpilot to read/write to
