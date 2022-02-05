@@ -81,7 +81,7 @@ $ vim /lib/init/fstab
 # add following line at the end
 /userdata/usr   /usr                   auto            bind,suid                                 0 0
 ```
-Sources: https://serverfault.com/a/613184
+Source: https://serverfault.com/a/613184
 
 Now reboot the system, check `ls /usr`, and hopefully your `TEST` file is still in there! If not, something has gone wrong...
 
@@ -94,5 +94,6 @@ $ mount --bind / /bindmnt
 $ rm -rf /bindmnt/usr/*
 $ umount /bindmnt
 ```
+Source: https://askubuntu.com/a/670
 
 Now your system partition should have lots more free space!
