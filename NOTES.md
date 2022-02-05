@@ -67,7 +67,7 @@ Now we need to mount the new directory to `/usr` before we can delete the old fi
 ```
 $ mount -o bind,suid /userdata/usr /usr
 $ touch /usr/TEST
-$ ls /usr
+$ ls /userdata/usr
 # see TEST!
 ```
 
@@ -77,5 +77,6 @@ To do this permanently, we would normally modify `/etc/fstab`. However, Ubuntu T
 $ vim /lib/init/fstab
 ```
 ```
-# TODO
+# add following line at the end
+/userdata/usr /usr auto bind,suid 0 0
 ```
