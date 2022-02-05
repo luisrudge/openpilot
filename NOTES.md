@@ -70,6 +70,7 @@ $ touch /usr/TEST
 $ ls /userdata/usr
 # see TEST!
 ```
+Source: https://askubuntu.com/a/543098
 
 To do this permanently, we would normally modify `/etc/fstab`. However, Ubuntu Touch is weird and this file is generated on boot so we can't modify it. Instead, we can add an entry to `/lib/init/fstab`.
 
@@ -80,3 +81,4 @@ $ vim /lib/init/fstab
 # add following line at the end
 /userdata/usr /usr auto bind,suid 0 0
 ```
+Source: https://serverfault.com/a/613184
