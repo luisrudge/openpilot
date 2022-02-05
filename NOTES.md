@@ -11,9 +11,11 @@ $ mount -o rw,remount /
 
 
 ## Install useful tools
+
+Here we install `nano`, `vim`, `neofetch`... I will reference vim as the editor in this guide but use whatever you are comfortable with.
 ```
 $ apt update
-$ apt install -y nano vim wget htop tmux
+$ apt install -y nano vim wget htop tmux neofetch
 ```
 
 
