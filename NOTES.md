@@ -2,6 +2,8 @@ Starting again from the beginning...
 
 
 ## Mount system as rw (read-write)
+
+You will have to do this on every boot. If someone knows a better way, let me know!
 ```
 $ sudo su
 $ mount -o rw,remount /
@@ -24,15 +26,14 @@ $ vim /etc/hostname
 frici
 ```
 
-Update `/etc/hosts` to match.
-
+Make sure to update `/etc/hosts` to match, otherwise `sudo` will stop working...
 ```
 $ vim /etc/hosts
 ```
 ```
 127.0.0.1       localhost.localdomain   localhost
 ::1         ubuntu-phablet  localhost6.localdomain6 localhost6
-127.0.1.1       ubuntu-phablet  ub-fajita   # <-- add your hostname here, matching exactly what you put in /etc/hostname
+127.0.1.1       ubuntu-phablet  frici   # <-- add your hostname here, matching exactly what you put in /etc/hostname
 
 # ... the rest of the file ...
 ```
@@ -40,6 +41,7 @@ $ vim /etc/hosts
 
 ## Making space in the `system` partition
 
+There is not much space to work with to install packages in the system partition (94% used!). 
 ```
 $ df -h
 Filesystem                       Size  Used Avail Use% Mounted on
@@ -51,8 +53,7 @@ tmpfs                            560M  1.5M  559M   1% /run
 ...
 ```
 
-There is not much space to work with to install packages in the system partition (94% used!). To fix this we can move the entire `/usr` directory to the `userdata` partition and create a bind mount so that it can still be accessed at `/usr`.
-
+To fix this we can move the entire `/usr` directory to the `userdata` partition and create a bind mount so that it can still be accessed at `/usr`.
 ```
 # Create the new directory
 $ mkdir /userdata/usr
@@ -63,7 +64,6 @@ $ find . -depth -print0 | sudo cpio --null --sparse -pvd /userdata/usr/
 ```
 
 Now we need to mount the new directory to `/usr` before we can delete the old files and make space.
-
 ```
 $ mount -o bind,suid /userdata/usr /usr
 $ touch /usr/TEST
@@ -73,7 +73,6 @@ $ ls /userdata/usr
 Source: https://askubuntu.com/a/543098
 
 To do this permanently, we would normally modify `/etc/fstab`. However, Ubuntu Touch is weird and this file is generated on boot so we can't modify it. Instead, we can add an entry to `/lib/init/fstab`.
-
 ```
 $ vim /lib/init/fstab
 ```
@@ -88,6 +87,7 @@ Now reboot the system, check `ls /usr`, and hopefully your `TEST` file is still 
 
 ## Delete the old `/usr` contents (now hidden)
 
+We can delete the contents of the old `/usr` folder by creating a bind mount. Just copy the commands below:
 ```
 $ mkdir /bindmnt
 $ mount --bind / /bindmnt
@@ -96,11 +96,12 @@ $ umount /bindmnt
 ```
 Source: https://askubuntu.com/a/670
 
-Now your system partition should have lots more free space!
+Now your system partition should have lots more free space! (check `df -h` again).
 
 
 ## Network connectivity
 
+If your networking breaks, try this... You might have to run it on every boot.
 ```
 echo nameserver 8.8.8.8 | sudo tee /etc/resolv.conf
 ```
