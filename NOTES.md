@@ -85,3 +85,11 @@ $ vim /lib/init/fstab
 /userdata/usr   /usr                   auto            bind,suid                                 0 0
 ```
 Source: https://serverfault.com/a/613184
+
+
+Reboot the system, check `/usr`, and hopefully your `TEST` file is still in there! If not, something has gone wrong...
+
+
+# Delete the old `/usr` (now hidden)
+
+TODO
