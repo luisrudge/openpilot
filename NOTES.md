@@ -84,12 +84,18 @@ $ vim /lib/init/fstab
 # add following line at the end
 /userdata/usr   /usr                   auto            bind,suid                                 0 0
 ```
-Source: https://serverfault.com/a/613184
+Sources: https://serverfault.com/a/613184
+
+Now reboot the system, check `ls /usr`, and hopefully your `TEST` file is still in there! If not, something has gone wrong...
 
 
-Reboot the system, check `/usr`, and hopefully your `TEST` file is still in there! If not, something has gone wrong...
+## Delete the old `/usr` (now hidden)
 
+```
+$ mkdir /bindmnt
+$ mount --bind / /bindmnt
+$ rm -rf /bindmnt/usr
+$ umount /bindmnt
+```
 
-# Delete the old `/usr` (now hidden)
-
-TODO
+Now your system partition should have lots more free space!
