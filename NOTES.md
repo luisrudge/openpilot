@@ -58,6 +58,7 @@ There is not much space to work with to install packages in the system partition
 $ mkdir /userdata/usr
 
 # Copy contents of /usr, preserving ownership and permissions
+$ cd /usr
 $ find . -depth -print0 | sudo cpio --null --sparse -pvd /userdata/usr/
 ```
 
