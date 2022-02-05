@@ -89,7 +89,7 @@ Sources: https://serverfault.com/a/613184
 Now reboot the system, check `ls /usr`, and hopefully your `TEST` file is still in there! If not, something has gone wrong...
 
 
-## Delete the old `/usr` (now hidden)
+## Delete the old `/usr` contents (now hidden)
 
 ```
 $ mkdir /bindmnt
