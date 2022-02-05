@@ -3,17 +3,20 @@
 
 Starting again from the beginning...
 
+
 ## Mount system as rw (read-write)
 ```
 $ sudo su
 $ mount -o rw,remount /
 ```
 
+
 ## Install useful tools
 ```
 $ apt update
 $ apt install -y nano vim wget htop tmux
 ```
+
 
 ## Update hostname (optional)
 Change it to something you like! (keep it simple, no special chars/spaces)
