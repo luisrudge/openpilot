@@ -94,7 +94,7 @@ Now reboot the system, check `ls /usr`, and hopefully your `TEST` file is still 
 ```
 $ mkdir /bindmnt
 $ mount --bind / /bindmnt
-$ rm -rf /bindmnt/usr
+$ rm -rf /bindmnt/usr/*
 $ umount /bindmnt
 ```
 
