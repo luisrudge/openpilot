@@ -79,6 +79,6 @@ $ vim /lib/init/fstab
 ```
 ```
 # add following line at the end
-/userdata/usr /usr auto bind,suid 0 0
+/userdata/usr   /usr                   auto            bind,suid                                 0 0
 ```
 Source: https://serverfault.com/a/613184
