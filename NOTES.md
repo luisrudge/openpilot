@@ -97,3 +97,10 @@ $ umount /bindmnt
 Source: https://askubuntu.com/a/670
 
 Now your system partition should have lots more free space!
+
+
+## Network connectivity
+
+```
+echo nameserver 8.8.8.8 | sudo tee /etc/resolv.conf
+```
