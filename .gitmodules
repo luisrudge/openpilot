@@ -13,3 +13,6 @@
 [submodule "rednose_repo"]
 	path = rednose_repo
 	url = ../../commaai/rednose.git
+[submodule "bench"]
+	path = bench
+	url = git@github.com:incognitojam/bench.git
