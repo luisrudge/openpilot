@@ -749,12 +749,12 @@ void CameraState::camera_open() {
 }
 
 void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
-  s->driver_cam.camera_init(s, v, CAMERA_ID_IMX363, 2, 20, device_id, ctx, VISION_STREAM_RGB_DRIVER, VISION_STREAM_DRIVER);
+  s->driver_cam.camera_init(s, v, CAMERA_ID_IMX363, 0, 20, device_id, ctx, VISION_STREAM_RGB_DRIVER, VISION_STREAM_DRIVER);
   printf("driver camera initted \n");
   if (!env_only_driver) {
     s->road_cam.camera_init(s, v, CAMERA_ID_IMX363, 1, 20, device_id, ctx, VISION_STREAM_RGB_ROAD, VISION_STREAM_ROAD); // swap left/right
     printf("road camera initted \n");
-    s->wide_road_cam.camera_init(s, v, CAMERA_ID_IMX363, 0, 20, device_id, ctx, VISION_STREAM_RGB_WIDE_ROAD, VISION_STREAM_WIDE_ROAD);
+    s->wide_road_cam.camera_init(s, v, CAMERA_ID_IMX363, 2, 20, device_id, ctx, VISION_STREAM_RGB_WIDE_ROAD, VISION_STREAM_WIDE_ROAD);
     printf("wide road camera initted \n");
   }
 
@@ -767,12 +767,14 @@ void cameras_open(MultiCameraState *s) {
 
   LOG("-- Opening devices");
   // video0 is req_mgr, the target of many ioctls
-  s->video0_fd = HANDLE_EINTR(open("/dev/v4l/by-path/platform-soc:qcom_cam-req-mgr-video-index0", O_RDWR | O_NONBLOCK));
+  //s->video0_fd = HANDLE_EINTR(open("/dev/v4l/by-path/platform-soc:qcom_cam-req-mgr-video-index0", O_RDWR | O_NONBLOCK));
+  s->video0_fd = HANDLE_EINTR(open("/dev/video1", O_RDWR | O_NONBLOCK));
   assert(s->video0_fd >= 0);
   LOGD("opened video0");
 
   // video1 is cam_sync, the target of some ioctls
-  s->video1_fd = HANDLE_EINTR(open("/dev/v4l/by-path/platform-cam_sync-video-index0", O_RDWR | O_NONBLOCK));
+  //s->video1_fd = HANDLE_EINTR(open("/dev/v4l/by-path/platform-cam_sync-video-index0", O_RDWR | O_NONBLOCK));
+  s->video1_fd = HANDLE_EINTR(open("/dev/video2", O_RDWR | O_NONBLOCK));
   assert(s->video1_fd >= 0);
   LOGD("opened video1");
 
