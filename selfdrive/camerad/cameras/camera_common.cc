@@ -19,8 +19,13 @@
 #include "selfdrive/hardware/hw.h"
 
 #ifdef QCOM
+#ifdef ANDROID_9
+#include "CL/cl_ext_qcom.h"
+#include "selfdrive/camerad/cameras/camera_pixel3.h"
+#else
 #include "CL/cl_ext_qcom.h"
 #include "selfdrive/camerad/cameras/camera_qcom.h"
+#endif
 #elif QCOM2
 #include "CL/cl_ext_qcom.h"
 #include "selfdrive/camerad/cameras/camera_qcom2.h"
@@ -167,8 +172,10 @@ bool CameraBuf::acquire() {
     float gain = 0.0;
 
 #ifndef QCOM2
+#ifndef ANDROID_9
     gain = camera_state->digital_gain;
     if ((int)gain == 0) gain = 1.0;
+#endif
 #endif
 
     debayer->queue(q, camrabuf_cl, cur_rgb_buf->buf_cl, rgb_width, rgb_height, gain, &event);

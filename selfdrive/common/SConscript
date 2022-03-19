@@ -1,3 +1,4 @@
+import subprocess
 Import('env', 'arch', 'SHARED')
 
 if SHARED:
@@ -23,7 +24,11 @@ files = [
 ]
 
 if arch == "aarch64":
-  _gpu_libs = ['gui', 'adreno_utils']
+  android_version = subprocess.check_output(["getprop", "ro.build.version.release"], encoding='utf8').rstrip()
+  if android_version == '9':
+    _gpu_libs = ["GLESv2"]
+  else:
+    _gpu_libs = ['gui', 'adreno_utils']
 elif arch == "larch64":
   _gpu_libs = ["GLESv2"]
 else:

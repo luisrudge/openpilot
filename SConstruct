@@ -88,6 +88,10 @@ if arch == "aarch64" or arch == "larch64":
   cpppath = [
     "#third_party/opencl/include",
   ]
+  if android_version == '9':
+    cpppath += [
+       "#selfdrive/camerad/include",
+     ]
 
   libpath = [
     "/usr/local/lib",
