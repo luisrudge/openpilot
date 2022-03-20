@@ -13,12 +13,12 @@
 #include <cstdio>
 #include <cstring>
 
-#include "media/cam_defs.h"
-#include "media/cam_isp.h"
-#include "media/cam_isp_ife.h"
-#include "media/cam_sensor.h"
-#include "media/cam_sensor_cmn_header.h"
-#include "media/cam_sync.h"
+#include "media_pixel3/cam_defs.h"
+#include "media_pixel3/cam_isp.h"
+#include "media_pixel3/cam_isp_ife.h"
+#include "media_pixel3/cam_sensor.h"
+#include "media_pixel3/cam_sensor_cmn_header.h"
+#include "media_pixel3/cam_sync.h"
 #include "selfdrive/common/swaglog.h"
 #include "selfdrive/camerad/cameras/sensor_pixel3_i2c.h"
 
@@ -239,18 +239,24 @@ void CameraState::sensors_init() {
   switch (camera_num) {
     case 0:
       // port 0
-      i2c_info->slave_addr = 0x20;
-      probe->camera_id = 1;
+      i2c_info->slave_addr = 0x34;
+      probe->camera_id = 0;
+      probe->reg_addr = 0x0;
+      probe->expected_data = 0x0;
       break;
     case 1:
       // port 1
-      i2c_info->slave_addr = 0x34;
-      probe->camera_id = 2;
+      i2c_info->slave_addr = 0x20;
+      probe->camera_id = 1;
+      probe->reg_addr = 0x16;
+      probe->expected_data = 0x355;
       break;
     case 2:
       // port 2
-      i2c_info->slave_addr = 0x16;
-      probe->camera_id = 0;
+      i2c_info->slave_addr = 0x34;
+      probe->camera_id = 2;
+      probe->reg_addr = 0x16;
+      probe->expected_data = 0x355;
       break;
   }
 
@@ -263,8 +269,6 @@ void CameraState::sensors_init() {
   probe->addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
   probe->op_code = 3;   // don't care?
   probe->cmd_type = CAMERA_SENSOR_CMD_TYPE_PROBE;
-  probe->reg_addr = 0x16; //0x300a; //0x300b;
-  probe->expected_data = 0x355; //0x7750; //0x885a;
   probe->data_mask = 0;
 
   //buf_desc[1].size = buf_desc[1].length = 148;
@@ -628,12 +632,12 @@ void CameraState::camera_open() {
       .usage_type = 0x0,
 
       .left_start = 0,
-      .left_stop = FRAME_WIDTH - 1,
-      .left_width = FRAME_WIDTH,
+      .left_stop = 2279,
+      .left_width = 2280,
 
-      .right_start = 0,
-      .right_stop = FRAME_WIDTH - 1,
-      .right_width = FRAME_WIDTH,
+      .right_start = 1868,
+      .right_stop = 4031,
+      .right_width = 2164,
 
       .line_start = 0,
       .line_stop = FRAME_HEIGHT - 1,
@@ -643,11 +647,10 @@ void CameraState::camera_open() {
       .batch_size = 0x0,
       .dsp_mode = CAM_ISP_DSP_MODE_NONE,
       .hbi_cnt = 0x0,
-      .custom_csid = 0x0,
 
       .num_out_res = 0x1,
       .data[0] = (struct cam_isp_out_port_info){
-          .res_type = CAM_ISP_IFE_OUT_RES_RDI_0,
+          .res_type = CAM_ISP_IFE_OUT_RES_RDI_2,
           .format = CAM_FORMAT_MIPI_RAW_10,
           .width = FRAME_WIDTH,
           .height = FRAME_HEIGHT,
