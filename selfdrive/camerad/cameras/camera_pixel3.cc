@@ -240,17 +240,17 @@ void CameraState::sensors_init() {
     case 0:
       // port 0
       i2c_info->slave_addr = 0x20;
-      probe->camera_id = 0;
+      probe->camera_id = 1;
       break;
     case 1:
       // port 1
       i2c_info->slave_addr = 0x34;
-      probe->camera_id = 1;
+      probe->camera_id = 2;
       break;
     case 2:
       // port 2
-      i2c_info->slave_addr = 0x20;
-      probe->camera_id = 2;
+      i2c_info->slave_addr = 0x16;
+      probe->camera_id = 0;
       break;
   }
 
@@ -263,7 +263,7 @@ void CameraState::sensors_init() {
   probe->addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
   probe->op_code = 3;   // don't care?
   probe->cmd_type = CAMERA_SENSOR_CMD_TYPE_PROBE;
-  probe->reg_addr = 0x330; //0x300a; //0x300b;
+  probe->reg_addr = 0x16; //0x300a; //0x300b;
   probe->expected_data = 0x355; //0x7750; //0x885a;
   probe->data_mask = 0;
 
