@@ -412,7 +412,7 @@ void CameraState::config_isp(int io_mem_handle, int fence, int request_id, int b
   tmp.resource_hfr = {
     .num_ports = 1,  // 10 for YUV (but I don't think we need them)
     .port_hfr_config[0] = {
-      .resource_type = CAM_ISP_IFE_OUT_RES_RDI_0, // CAM_ISP_IFE_OUT_RES_FULL for YUV
+      .resource_type = CAM_ISP_IFE_OUT_RES_RDI_2, // CAM_ISP_IFE_OUT_RES_FULL for YUV
       .subsample_pattern = 1,
       .subsample_period = 0,
       .framedrop_pattern = 1,
@@ -484,7 +484,7 @@ void CameraState::config_isp(int io_mem_handle, int fence, int request_id, int b
     io_cfg[0].color_space = CAM_COLOR_SPACE_BASE;          // CAM_COLOR_SPACE_BT601_FULL for YUV
     io_cfg[0].color_pattern = 0x5;                         // 0x0 for YUV
     io_cfg[0].bpp = 0xc;
-    io_cfg[0].resource_type = CAM_ISP_IFE_OUT_RES_RDI_0;   // CAM_ISP_IFE_OUT_RES_FULL for YUV
+    io_cfg[0].resource_type = CAM_ISP_IFE_OUT_RES_RDI_2;   // CAM_ISP_IFE_OUT_RES_FULL for YUV
     io_cfg[0].fence = fence;
     io_cfg[0].direction = CAM_BUF_OUTPUT;
     io_cfg[0].subsample_pattern = 0x1;
