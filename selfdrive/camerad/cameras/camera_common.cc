@@ -51,7 +51,11 @@ public:
              ci->frame_width, ci->frame_height, ci->frame_stride,
              b->rgb_width, b->rgb_height, b->rgb_stride,
              ci->bayer_flip, ci->hdr, s->camera_num);
+#ifdef ANDROID_9
+    const char *cl_file = "cameras/real_debayer10.cl";
+#else
     const char *cl_file = Hardware::TICI() ? "cameras/real_debayer.cl" : "cameras/debayer.cl";
+#endif
     cl_program prg_debayer = cl_program_from_file(context, device_id, cl_file, args);
     krnl_ = CL_CHECK_ERR(clCreateKernel(prg_debayer, "debayer10", &err));
     CL_CHECK(clReleaseProgram(prg_debayer));
@@ -69,6 +73,14 @@ public:
       CL_CHECK(clSetKernelArg(krnl_, 2, localMemSize, 0));
       CL_CHECK(clEnqueueNDRangeKernel(q, krnl_, 2, NULL, globalWorkSize, localWorkSize, 0, 0, debayer_event));
     } else {
+#ifdef ANDROID_9
+      const int debayer_local_worksize = 16;
+      constexpr int localMemSize = (debayer_local_worksize + 2 * (3 / 2)) * (debayer_local_worksize + 2 * (3 / 2)) * sizeof(short int);
+      const size_t globalWorkSize[] = {size_t(width), size_t(height)};
+      const size_t localWorkSize[] = {debayer_local_worksize, debayer_local_worksize};
+      CL_CHECK(clSetKernelArg(krnl_, 2, localMemSize, 0));
+      CL_CHECK(clEnqueueNDRangeKernel(q, krnl_, 2, NULL, globalWorkSize, localWorkSize, 0, 0, debayer_event));
+#else
       if (hdr_) {
         // HDR requires a 1-D kernel due to the DPCM compression
         const size_t debayer_local_worksize = 128;
@@ -83,6 +95,7 @@ public:
         CL_CHECK(clSetKernelArg(krnl_, 2, sizeof(float), &gain));
         CL_CHECK(clEnqueueNDRangeKernel(q, krnl_, 2, NULL, globalWorkSize, localWorkSize, 0, 0, debayer_event));
       }
+#endif
     }
   }
 
@@ -154,7 +167,16 @@ CameraBuf::~CameraBuf() {
 
 bool CameraBuf::acquire() {
   if (!safe_queue.try_pop(cur_buf_idx, 1)) return false;
-
+#if 1
+  static int save_cnt1 = 0, counter1=0;
+  if(counter1++ % 50 == 1 && save_cnt1++ < 5) {
+    LOGD("Save raw frame: %d bytes", (int)camera_bufs[cur_buf_idx].len);
+    FILE* pFile1;
+    pFile1 = fopen((std::string("/data/") + std::to_string(save_cnt1) + ".raw").c_str(), "wb");
+    fwrite(camera_bufs[cur_buf_idx].addr, 1, camera_bufs[cur_buf_idx].len, pFile1);
+    fclose(pFile1);
+  }
+#endif
   if (camera_bufs_metadata[cur_buf_idx].frame_id == -1) {
     LOGE("no frame data? wtf");
     release();
@@ -186,6 +208,17 @@ bool CameraBuf::acquire() {
 
   clWaitForEvents(1, &event);
   CL_CHECK(clReleaseEvent(event));
+
+#if 1
+  static int save_cnt = 0, counter=0;
+  if(counter++ % 50 == 1 && save_cnt++ < 5) {
+    LOGD("Save rgb frame: %d bytes", (int)cur_rgb_buf->len, save_cnt);
+    FILE* pFile;
+    pFile = fopen((std::string("/data/") + std::to_string(save_cnt) + ".rgb").c_str(), "wb");
+    fwrite(cur_rgb_buf->addr, 1, cur_rgb_buf->len, pFile);
+    fclose(pFile);
+  }
+#endif
 
   cur_yuv_buf = vipc_server->get_buffer(yuv_type);
   rgb2yuv->queue(q, cur_rgb_buf->buf_cl, cur_yuv_buf->buf_cl);
