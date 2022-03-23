@@ -167,16 +167,16 @@ CameraBuf::~CameraBuf() {
 
 bool CameraBuf::acquire() {
   if (!safe_queue.try_pop(cur_buf_idx, 1)) return false;
-#if 1
-  static int save_cnt1 = 0, counter1=0;
-  if(counter1++ % 50 == 1 && save_cnt1++ < 5) {
-    LOGD("Save raw frame: %d bytes", (int)camera_bufs[cur_buf_idx].len);
-    FILE* pFile1;
-    pFile1 = fopen((std::string("/data/") + std::to_string(save_cnt1) + ".raw").c_str(), "wb");
-    fwrite(camera_bufs[cur_buf_idx].addr, 1, camera_bufs[cur_buf_idx].len, pFile1);
-    fclose(pFile1);
+  if(env_dump_raw_and_rgb) {
+    static int save_cnt1 = 0, counter1=0;
+    if(counter1++ % 50 == 1 && save_cnt1++ < 5) {
+      LOGD("Save raw frame: %d bytes", (int)camera_bufs[cur_buf_idx].len);
+      FILE* pFile1;
+      pFile1 = fopen((std::string("/data/") + std::to_string(save_cnt1) + ".raw").c_str(), "wb");
+      fwrite(camera_bufs[cur_buf_idx].addr, 1, camera_bufs[cur_buf_idx].len, pFile1);
+      fclose(pFile1);
+    }
   }
-#endif
   if (camera_bufs_metadata[cur_buf_idx].frame_id == -1) {
     LOGE("no frame data? wtf");
     release();
@@ -209,16 +209,17 @@ bool CameraBuf::acquire() {
   clWaitForEvents(1, &event);
   CL_CHECK(clReleaseEvent(event));
 
-#if 1
-  static int save_cnt = 0, counter=0;
-  if(counter++ % 50 == 1 && save_cnt++ < 5) {
-    LOGD("Save rgb frame: %d bytes", (int)cur_rgb_buf->len, save_cnt);
-    FILE* pFile;
-    pFile = fopen((std::string("/data/") + std::to_string(save_cnt) + ".rgb").c_str(), "wb");
-    fwrite(cur_rgb_buf->addr, 1, cur_rgb_buf->len, pFile);
-    fclose(pFile);
+
+ if(env_dump_raw_and_rgb) {
+    static int save_cnt = 0, counter=0;
+    if(counter++ % 50 == 1 && save_cnt++ < 5) {
+      LOGD("Save rgb frame: %d bytes", (int)cur_rgb_buf->len, save_cnt);
+      FILE* pFile;
+      pFile = fopen((std::string("/data/") + std::to_string(save_cnt) + ".rgb").c_str(), "wb");
+      fwrite(cur_rgb_buf->addr, 1, cur_rgb_buf->len, pFile);
+      fclose(pFile);
+    }
   }
-#endif
 
   cur_yuv_buf = vipc_server->get_buffer(yuv_type);
   rgb2yuv->queue(q, cur_rgb_buf->buf_cl, cur_yuv_buf->buf_cl);

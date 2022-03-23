@@ -46,6 +46,7 @@ const bool env_send_wide_road = getenv("SEND_WIDE_ROAD") != NULL;
 // note: ONLY_ROAD doesn't work, likely due to a mixup with wideRoad cam in the kernel
 const bool env_only_driver = getenv("ONLY_DRIVER") != NULL;
 const bool env_debug_frames = getenv("DEBUG_FRAMES") != NULL;
+const bool env_dump_raw_and_rgb = getenv("DUMP_RAW_AND_RGB") != NULL;
 
 typedef void (*release_cb)(void *cookie, int buf_idx);
 
