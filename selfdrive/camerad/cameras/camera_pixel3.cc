@@ -1,4 +1,4 @@
-#include "selfdrive/camerad/cameras/camera_qcom2.h"
+#include "selfdrive/camerad/cameras/camera_pixel3.h"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -752,13 +752,13 @@ void CameraState::camera_open() {
 }
 
 void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_id, cl_context ctx) {
-  s->driver_cam.camera_init(s, v, CAMERA_ID_IMX363, 0, 20, device_id, ctx, VISION_STREAM_RGB_DRIVER, VISION_STREAM_DRIVER);
+#if false
+  s->driver_cam.camera_init(s, v, CAMERA_ID_IMX363, 1, 20, device_id, ctx, VISION_STREAM_RGB_DRIVER, VISION_STREAM_DRIVER);
   printf("driver camera initted \n");
+#endif
   if (!env_only_driver) {
-    s->road_cam.camera_init(s, v, CAMERA_ID_IMX363, 1, 20, device_id, ctx, VISION_STREAM_RGB_ROAD, VISION_STREAM_ROAD); // swap left/right
+    s->road_cam.camera_init(s, v, CAMERA_ID_IMX363, 0, 20, device_id, ctx, VISION_STREAM_RGB_ROAD, VISION_STREAM_ROAD); // swap left/right
     printf("road camera initted \n");
-    s->wide_road_cam.camera_init(s, v, CAMERA_ID_IMX363, 2, 20, device_id, ctx, VISION_STREAM_RGB_WIDE_ROAD, VISION_STREAM_WIDE_ROAD);
-    printf("wide road camera initted \n");
   }
 
   s->sm = new SubMaster({"driverState"});
@@ -807,14 +807,13 @@ void cameras_open(MultiCameraState *s) {
   sub.id = 2; // should use boot time for sof
   ret = HANDLE_EINTR(ioctl(s->video0_fd, VIDIOC_SUBSCRIBE_EVENT, &sub));
   printf("req mgr subscribe: %d\n", ret);
-
+#if false
   s->driver_cam.camera_open();
   printf("driver camera opened \n");
+#endif
   if (!env_only_driver) {
     s->road_cam.camera_open();
     printf("road camera opened \n");
-    s->wide_road_cam.camera_open();
-    printf("wide road camera opened \n");
   }
 }
 
@@ -863,10 +862,11 @@ void CameraState::camera_close() {
 }
 
 void cameras_close(MultiCameraState *s) {
+#if false
   s->driver_cam.camera_close();
+#endif
   if (!env_only_driver) {
     s->road_cam.camera_close();
-    s->wide_road_cam.camera_close();
   }
 
   delete s->sm;
@@ -1041,15 +1041,16 @@ void process_road_camera(MultiCameraState *s, CameraState *c, int cnt) {
   MessageBuilder msg;
   auto framed = c == &s->road_cam ? msg.initEvent().initRoadCameraState() : msg.initEvent().initWideRoadCameraState();
   fill_frame_data(framed, b->cur_frame_data);
-  if ((c == &s->road_cam && env_send_road) || (c == &s->wide_road_cam && env_send_wide_road)) {
+  if (c == &s->road_cam && env_send_road) {
     framed.setImage(get_frame_image(b));
   }
   if (c == &s->road_cam) {
     framed.setTransform(b->yuv_transform.v);
   }
-  s->pm->send(c == &s->road_cam ? "roadCameraState" : "wideRoadCameraState", msg);
+  s->pm->send("roadCameraState", msg);
 
-  const auto [x, y, w, h] = (c == &s->wide_road_cam) ? std::tuple(96, 250, 1734, 524) : std::tuple(96, 160, 1734, 986);
+  // TODO
+  const auto [x, y, w, h] = std::tuple(96, 160, 1734, 986);
   const int skip = 2;
   camera_autoexposure(c, set_exposure_target(b, x, x + w, skip, y, y + h, skip));
 }
@@ -1057,18 +1058,20 @@ void process_road_camera(MultiCameraState *s, CameraState *c, int cnt) {
 void cameras_run(MultiCameraState *s) {
   LOG("-- Starting threads");
   std::vector<std::thread> threads;
+#if false
   threads.push_back(start_process_thread(s, &s->driver_cam, common_process_driver_camera));
+#endif
   if (!env_only_driver) {
     threads.push_back(start_process_thread(s, &s->road_cam, process_road_camera));
-    threads.push_back(start_process_thread(s, &s->wide_road_cam, process_road_camera));
   }
 
   // start devices
   LOG("-- Starting devices");
+#if false
   s->driver_cam.sensors_start();
+#endif
   if (!env_only_driver) {
     s->road_cam.sensors_start();
-    s->wide_road_cam.sensors_start();
   }
 
   // poll events
@@ -1100,10 +1103,10 @@ void cameras_run(MultiCameraState *s) {
 
         if (event_data->session_hdl == s->road_cam.session_handle) {
           s->road_cam.handle_camera_event(event_data);
-        } else if (event_data->session_hdl == s->wide_road_cam.session_handle) {
-          s->wide_road_cam.handle_camera_event(event_data);
+#if false
         } else if (event_data->session_hdl == s->driver_cam.session_handle) {
           s->driver_cam.handle_camera_event(event_data);
+#endif
         } else {
           printf("Unknown vidioc event source\n");
           assert(false);
