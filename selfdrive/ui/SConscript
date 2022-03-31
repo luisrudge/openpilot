@@ -1,4 +1,5 @@
 import os
+import subprocess
 Import('qt_env', 'arch', 'common', 'messaging', 'gpucommon', 'visionipc',
        'cereal', 'transformations')
 
@@ -132,3 +133,8 @@ if maps:
 
   if GetOption('extras'):
     qt_env.SharedLibrary("navd/map_renderer", ["navd/map_renderer.cc"], LIBS=qt_libs + ['common', 'messaging'])
+
+if arch == "aarch64":
+  android_version = subprocess.check_output(["getprop", "ro.build.version.release"], encoding='utf8').rstrip()
+  if android_version == '9':
+    qt_env.Program("watch_pixel3", ["watch_pixel3.cc"], LIBS=qt_libs + ['common', 'json11', 'zmq', 'visionipc', 'messaging'])

@@ -886,6 +886,9 @@ void CameraState::handle_camera_event(void *evdat) {
 
     // check for skipped frames
     if (main_id > frame_id_last + 1 && !skipped) {
+#if true
+      LOGE("Realign due to main_id %d > frame_id_last + 1 %d", main_id, frame_id_last + 1 );
+#endif
       // realign
       clear_req_queue(multi_cam_state->video0_fd, event_data->session_hdl, event_data->u.frame_msg.link_hdl);
       enqueue_req_multi(real_id + 1, FRAME_BUF_COUNT - 1, 0);
@@ -919,6 +922,9 @@ void CameraState::handle_camera_event(void *evdat) {
   } else { // not ready
     // reset after half second of no response
     if (main_id > frame_id_last + 10) {
+#if true
+      LOGE("Realign due to main_id %d > frame_id_last + 10 %d", main_id, frame_id_last + 10 );
+#endif
       clear_req_queue(multi_cam_state->video0_fd, event_data->session_hdl, event_data->u.frame_msg.link_hdl);
       enqueue_req_multi(request_id_last + 1, FRAME_BUF_COUNT, 0);
       frame_id_last = main_id;

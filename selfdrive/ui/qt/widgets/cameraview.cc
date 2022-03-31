@@ -256,7 +256,11 @@ void CameraViewWidget::vipcThread() {
   std::unique_ptr<QOffscreenSurface> surface;
   std::unique_ptr<QOpenGLBuffer> gl_buffer;
 
+#ifdef ANDROID_9
+  if(true) {
+#else
   if (!Hardware::EON()) {
+#endif
     ctx = std::make_unique<QOpenGLContext>();
     ctx->setFormat(context()->format());
     ctx->setShareContext(context());
@@ -283,7 +287,11 @@ void CameraViewWidget::vipcThread() {
         continue;
       }
 
+#ifdef ANDROID_9
+      if(true) {
+#else
       if (!Hardware::EON()) {
+#endif
         gl_buffer.reset(new QOpenGLBuffer(QOpenGLBuffer::PixelUnpackBuffer));
         gl_buffer->create();
         gl_buffer->bind();
@@ -297,7 +305,11 @@ void CameraViewWidget::vipcThread() {
     if (VisionBuf *buf = vipc_client->recv(nullptr, 1000)) {
       {
         std::lock_guard lk(lock);
-        if (!Hardware::EON()) {
+#ifdef ANDROID_9
+       if(true) {
+#else
+       if (!Hardware::EON()) {
+#endif
           void *texture_buffer = gl_buffer->map(QOpenGLBuffer::WriteOnly);
 
           if (texture_buffer == nullptr) {
