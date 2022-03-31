@@ -154,7 +154,7 @@ __kernel void debayer10(const __global uchar * in,
 
   // a simplified version of https://opensignalprocessingjournal.com/contents/volumes/V6/TOSIGPJ-6-1/TOSIGPJ-6-1.pdf
   if (x_global % 2 == 0) {
-    if (y_global % 2 == 0) {
+    if (y_global % 2 == 1) {
       rgb.y = pv; // G1(R)
       half k1 = phi(fabs_diff(d1, pv) + fabs_diff(d2, pv));
       half k2 = phi(fabs_diff(d2, pv) + fabs_diff(d4, pv));
@@ -176,7 +176,7 @@ __kernel void debayer10(const __global uchar * in,
       rgb.x = (k2*(d2+d3)*0.5+k4*(d1+d4)*0.5)/(k2+k4);
     }
   } else {
-    if (y_global % 2 == 0) {
+    if (y_global % 2 == 1) {
       rgb.x = pv; // R
       half k1 = phi(fabs_diff(d1, d3) + fabs_diff(d2, d4));
       half k2 = phi(fabs_diff(n1, n4) + fabs_diff(n2, n3));
