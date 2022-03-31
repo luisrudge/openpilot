@@ -65,7 +65,11 @@ public:
     CL_CHECK(clSetKernelArg(krnl_, 0, sizeof(cl_mem), &cam_buf_cl));
     CL_CHECK(clSetKernelArg(krnl_, 1, sizeof(cl_mem), &buf_cl));
 
+#ifdef ANDROID_9
+    if(true) {
+#else
     if (Hardware::TICI()) {
+#endif
       const int debayer_local_worksize = 16;
       constexpr int localMemSize = (debayer_local_worksize + 2 * (3 / 2)) * (debayer_local_worksize + 2 * (3 / 2)) * sizeof(short int);
       const size_t globalWorkSize[] = {size_t(width), size_t(height)};
@@ -73,14 +77,6 @@ public:
       CL_CHECK(clSetKernelArg(krnl_, 2, localMemSize, 0));
       CL_CHECK(clEnqueueNDRangeKernel(q, krnl_, 2, NULL, globalWorkSize, localWorkSize, 0, 0, debayer_event));
     } else {
-#ifdef ANDROID_9
-      const int debayer_local_worksize = 16;
-      constexpr int localMemSize = (debayer_local_worksize + 2 * (3 / 2)) * (debayer_local_worksize + 2 * (3 / 2)) * sizeof(short int);
-      const size_t globalWorkSize[] = {size_t(width), size_t(height)};
-      const size_t localWorkSize[] = {debayer_local_worksize, debayer_local_worksize};
-      CL_CHECK(clSetKernelArg(krnl_, 2, localMemSize, 0));
-      CL_CHECK(clEnqueueNDRangeKernel(q, krnl_, 2, NULL, globalWorkSize, localWorkSize, 0, 0, debayer_event));
-#else
       if (hdr_) {
         // HDR requires a 1-D kernel due to the DPCM compression
         const size_t debayer_local_worksize = 128;
@@ -95,7 +91,6 @@ public:
         CL_CHECK(clSetKernelArg(krnl_, 2, sizeof(float), &gain));
         CL_CHECK(clEnqueueNDRangeKernel(q, krnl_, 2, NULL, globalWorkSize, localWorkSize, 0, 0, debayer_event));
       }
-#endif
     }
   }
 
