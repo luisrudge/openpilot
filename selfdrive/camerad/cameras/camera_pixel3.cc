@@ -22,6 +22,10 @@
 #include "selfdrive/common/swaglog.h"
 #include "selfdrive/camerad/cameras/sensor_pixel3_i2c.h"
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+#define DEBUG_CAM_SYNC_AND_REQ_MGR 1
+#endif
+
 extern ExitHandler do_exit;
 
 const size_t FRAME_WIDTH = 4032;
@@ -510,16 +514,23 @@ void CameraState::enqueue_buffer(int i, bool dp) {
 
   if (buf_handle[i]) {
     release(multi_cam_state->video0_fd, buf_handle[i]);
+#ifndef USE_V4L2_EVENT_FOR_CAM_SYNC
     // wait
     struct cam_sync_wait sync_wait = {0};
     sync_wait.sync_obj = sync_objs[i];
     sync_wait.timeout_ms = 50; // max dt tolerance, typical should be 23
     ret = do_cam_control(multi_cam_state->video1_fd, CAM_SYNC_WAIT, &sync_wait, sizeof(sync_wait));
     // LOGD("fence wait: %d %d", ret, sync_wait.sync_obj);
-
+#endif
     buf.camera_bufs_metadata[i].timestamp_eof = (uint64_t)nanos_since_boot(); // set true eof
     if (dp) buf.queue(i);
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+    struct cam_sync_userpayload_info pli = {0};
+    pli.sync_obj = sync_objs[i];
+    ret = do_cam_control(multi_cam_state->video1_fd, CAM_SYNC_DEREGISTER_PAYLOAD, &pli, sizeof(pli));
+    //LOGD("Deregister payload: %d %d", ret, sync_objs[i]);
+#endif
     // destroy old output fence
     struct cam_sync_info sync_destroy = {0};
     strcpy(sync_destroy.name, "NodeOutputPortFence");
@@ -543,6 +554,14 @@ void CameraState::enqueue_buffer(int i, bool dp) {
   // LOGD("fence req: %d %d", ret, sync_create.sync_obj);
   sync_objs[i] = sync_create.sync_obj;
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+  // Without payload registration, cam sync V4L2 event will not work.
+  struct cam_sync_userpayload_info pli = {0};
+  pli.sync_obj = sync_objs[i];
+  ret = do_cam_control(multi_cam_state->video1_fd, CAM_SYNC_REGISTER_PAYLOAD, &pli, sizeof(pli));
+  //LOGD("Register payload: %d %d", ret, sync_objs[i]);
+#endif
+
   // configure ISP to put the image in place
   struct cam_mem_mgr_map_cmd mem_mgr_map_cmd = {0};
   mem_mgr_map_cmd.mmu_hdls[0] = multi_cam_state->device_iommu;
@@ -557,6 +576,13 @@ void CameraState::enqueue_buffer(int i, bool dp) {
   sensors_poke(request_id);
   // LOGD("Poked sensor");
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+#ifdef DEBUG_CAM_SYNC_AND_REQ_MGR
+  LOGD("Insert to map: req_id %d, sync_obj %d", request_id, sync_objs[i]);
+#endif
+  req_info_map.insert({request_id, CameraRequestInfo()});
+  sync_obj_to_req_id.insert({sync_objs[i], request_id});
+#endif
   // push the buffer
   config_isp(buf_handle[i], sync_objs[i], request_id, buf0_handle, 65632*(i+1));
 }
@@ -807,6 +833,15 @@ void cameras_open(MultiCameraState *s) {
   sub.id = 2; // should use boot time for sof
   ret = HANDLE_EINTR(ioctl(s->video0_fd, VIDIOC_SUBSCRIBE_EVENT, &sub));
   printf("req mgr subscribe: %d\n", ret);
+
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+  static struct v4l2_event_subscription sub2 = {0};
+  sub2.type = CAM_SYNC_V4L_EVENT;
+  sub2.id = CAM_SYNC_V4L_EVENT_ID_CB_TRIG;
+  ret = HANDLE_EINTR(ioctl(s->video1_fd, VIDIOC_SUBSCRIBE_EVENT, &sub2));
+  printf("cam sync subscribe: %d\n", ret);
+#endif
+
 #if false
   s->driver_cam.camera_open();
   printf("driver camera opened \n");
@@ -873,6 +908,62 @@ void cameras_close(MultiCameraState *s) {
   delete s->pm;
 }
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+void CameraState::reset_all_maps() {
+  for (const auto& [sync_obj, req_id] : sync_obj_to_req_id) {
+#ifdef DEBUG_CAM_SYNC_AND_REQ_MGR
+  LOGD("%s: erase sync_obj: %u", __FUNCTION__, sync_obj);
+#endif
+#if false
+   struct cam_sync_userpayload_info pli = {0};
+    pli.sync_obj = sync_obj;
+    int ret = do_cam_control(multi_cam_state->video1_fd, CAM_SYNC_DEREGISTER_PAYLOAD, &pli, sizeof(pli));
+
+    struct cam_sync_info sync_destroy = {0};
+    strcpy(sync_destroy.name, "NodeOutputPortFence");
+    sync_destroy.sync_obj = sync_obj;
+    ret = do_cam_control(multi_cam_state->video1_fd, CAM_SYNC_DESTROY, &sync_destroy, sizeof(sync_destroy));
+#endif
+    req_info_map.erase(req_id);
+  }
+  sync_obj_to_req_id.clear();
+}
+
+// Return true if sync_obj found in map, return false otherwise
+bool CameraState::handle_camera_sync_event(struct cam_sync_ev_header *event_data) {
+#ifdef DEBUG_CAM_SYNC_AND_REQ_MGR
+  LOGD("%s: sync_obj: %u, status: %u", __FUNCTION__, event_data->sync_obj ,event_data->status);
+#endif
+  if(sync_obj_to_req_id.find(event_data->sync_obj) != sync_obj_to_req_id.end()) {
+    int req_id = sync_obj_to_req_id[event_data->sync_obj];
+    req_info_map[req_id].set_sync_status(event_data->status);
+#ifdef DEBUG_CAM_SYNC_AND_REQ_MGR
+  LOGD("Erase sync_obj: %d", event_data->sync_obj);
+#endif
+    sync_obj_to_req_id.erase(event_data->sync_obj);
+    if(req_info_map[req_id].sync_error()) {
+      LOGE("sync error for req_id %u, sync_obj: %u", req_id, event_data->sync_obj);
+      return true;
+    }
+    if(req_info_map[req_id].finished())
+      handle_req_finished(req_id);
+    return true;
+  }
+  return false;
+}
+
+void CameraState::handle_req_finished(int req_id) {
+  int real_id = req_id;
+#ifdef DEBUG_CAM_SYNC_AND_REQ_MGR
+  LOGD("Erase req_id:  %d", req_id);
+#endif
+  req_info_map.erase(req_id);
+  // dispatch
+  enqueue_req_multi(real_id + FRAME_BUF_COUNT, 1, 1);
+}
+
+#endif //USE_V4L2_EVENT_FOR_CAM_SYNC
+
 void CameraState::handle_camera_event(void *evdat) {
   struct cam_req_mgr_message *event_data = (struct cam_req_mgr_message *)evdat;
 
@@ -884,6 +975,7 @@ void CameraState::handle_camera_event(void *evdat) {
     if (real_id == 1) {idx_offset = main_id;}
     int buf_idx = (real_id - 1) % FRAME_BUF_COUNT;
 
+#if false
     // check for skipped frames
     if (main_id > frame_id_last + 1 && !skipped) {
 #if true
@@ -896,6 +988,7 @@ void CameraState::handle_camera_event(void *evdat) {
     } else if (main_id == frame_id_last + 1) {
       skipped = false;
     }
+#endif
 
     // check for dropped requests
     if (real_id > request_id_last + 1) {
@@ -917,8 +1010,17 @@ void CameraState::handle_camera_event(void *evdat) {
     meta_data.target_grey_fraction = target_grey_fraction;
     exp_lock.unlock();
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+   if(req_info_map.find(real_id) != req_info_map.end()) {
+      req_info_map[real_id].set_sof_result(event_data);
+    } else {
+      LOGE("req_id %d not found in map", real_id);
+      return;
+    }
+#else
     // dispatch
     enqueue_req_multi(real_id + FRAME_BUF_COUNT, 1, 1);
+#endif
   } else { // not ready
     // reset after half second of no response
     if (main_id > frame_id_last + 10) {
@@ -1083,10 +1185,18 @@ void cameras_run(MultiCameraState *s) {
   // poll events
   LOG("-- Dequeueing Video events");
   while (!do_exit) {
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+    struct pollfd fds[2] = {{0}, {0}};
+#else
     struct pollfd fds[1] = {{0}};
+#endif
 
     fds[0].fd = s->video0_fd;
     fds[0].events = POLLPRI;
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+    fds[1].fd = s->video1_fd;
+    fds[1].events = POLLPRI;
+#endif
 
     int ret = poll(fds, std::size(fds), 1000);
     if (ret < 0) {
@@ -1095,34 +1205,49 @@ void cameras_run(MultiCameraState *s) {
       break;
     }
 
-    if (!fds[0].revents) continue;
+    if (fds[0].revents) {
+      struct v4l2_event ev = {0};
+      ret = HANDLE_EINTR(ioctl(fds[0].fd, VIDIOC_DQEVENT, &ev));
+      if (ret == 0) {
+        if (ev.type == V4L_EVENT_CAM_REQ_MGR_EVENT) {
+          struct cam_req_mgr_message *event_data = (struct cam_req_mgr_message *)ev.u.data;
+          // LOGD("v4l2 event: sess_hdl 0x%X, link_hdl 0x%X, frame_id %d, req_id %lld, timestamp 0x%llx, sof_status %d\n", event_data->session_hdl, event_data->u.frame_msg.link_hdl, event_data->u.frame_msg.frame_id, event_data->u.frame_msg.request_id, event_data->u.frame_msg.timestamp, event_data->u.frame_msg.sof_status);
+          if (env_debug_frames) {
+            printf("sess_hdl 0x%X, link_hdl 0x%X, frame_id %lu, req_id %lu, timestamp 0x%lx, sof_status %d\n", event_data->session_hdl, event_data->u.frame_msg.link_hdl, event_data->u.frame_msg.frame_id, event_data->u.frame_msg.request_id, event_data->u.frame_msg.timestamp, event_data->u.frame_msg.sof_status);
+          }
 
-    struct v4l2_event ev = {0};
-    ret = HANDLE_EINTR(ioctl(fds[0].fd, VIDIOC_DQEVENT, &ev));
-    if (ret == 0) {
-      if (ev.type == V4L_EVENT_CAM_REQ_MGR_EVENT) {
-        struct cam_req_mgr_message *event_data = (struct cam_req_mgr_message *)ev.u.data;
-        // LOGD("v4l2 event: sess_hdl 0x%X, link_hdl 0x%X, frame_id %d, req_id %lld, timestamp 0x%llx, sof_status %d\n", event_data->session_hdl, event_data->u.frame_msg.link_hdl, event_data->u.frame_msg.frame_id, event_data->u.frame_msg.request_id, event_data->u.frame_msg.timestamp, event_data->u.frame_msg.sof_status);
-        if (env_debug_frames) {
-          printf("sess_hdl 0x%X, link_hdl 0x%X, frame_id %lu, req_id %lu, timestamp 0x%lx, sof_status %d\n", event_data->session_hdl, event_data->u.frame_msg.link_hdl, event_data->u.frame_msg.frame_id, event_data->u.frame_msg.request_id, event_data->u.frame_msg.timestamp, event_data->u.frame_msg.sof_status);
-        }
-
-        if (event_data->session_hdl == s->road_cam.session_handle) {
-          s->road_cam.handle_camera_event(event_data);
+          if (event_data->session_hdl == s->road_cam.session_handle) {
+            s->road_cam.handle_camera_event(event_data);
 #if false
-        } else if (event_data->session_hdl == s->driver_cam.session_handle) {
-          s->driver_cam.handle_camera_event(event_data);
+          } else if (event_data->session_hdl == s->driver_cam.session_handle) {
+            s->driver_cam.handle_camera_event(event_data);
 #endif
-        } else {
-          printf("Unknown vidioc event source\n");
-          assert(false);
+          } else {
+            printf("Unknown vidioc event source\n");
+            assert(false);
+          }
         }
+      } else {
+        LOGE("VIDIOC_DQEVENT failed, errno=%d", errno);
       }
-    } else {
-      LOGE("VIDIOC_DQEVENT failed, errno=%d", errno);
     }
-  }
 
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+ if (fds[1].revents) {
+      struct v4l2_event ev = {0};
+      ret = HANDLE_EINTR(ioctl(fds[1].fd, VIDIOC_DQEVENT, &ev));
+      if (ret == 0) {
+        if (ev.type == CAM_SYNC_V4L_EVENT) {
+          struct cam_sync_ev_header *event_data = CAM_SYNC_GET_HEADER_PTR(ev);
+          if(!s->road_cam.handle_camera_sync_event(event_data))
+              s->driver_cam.handle_camera_sync_event(event_data);
+        }
+      } else {
+        LOGE("VIDIOC_DQEVENT for cam sync failed, errno=%d", errno);
+      }
+    }
+#endif
+  }
   LOG(" ************** STOPPING **************");
 
   for (auto &t : threads) t.join();

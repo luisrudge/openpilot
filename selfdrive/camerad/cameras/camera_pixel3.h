@@ -7,7 +7,35 @@
 #include "selfdrive/camerad/cameras/camera_common.h"
 #include "selfdrive/common/util.h"
 
+//#define USE_V4L2_EVENT_FOR_CAM_SYNC
+
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+#include <map>
+#include <media_pixel3/cam_sync.h>
+#endif
+
 #define FRAME_BUF_COUNT 4
+
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+struct CameraRequestInfo {
+public:
+  CameraRequestInfo() {
+  }
+  void set_sync_status(int status) { sync_status = status;}
+  void set_sof_result(struct cam_req_mgr_message *m) {
+    sof_msg = *m;
+    sof_ready = true;
+  }
+  bool finished() {
+    return sync_status == CAM_SYNC_STATE_SIGNALED_SUCCESS && sof_ready;
+  }
+  bool sync_error() { return sync_status == CAM_SYNC_STATE_SIGNALED_ERROR;}
+  int32_t sync_obj;
+  int32_t sync_status = CAM_SYNC_STATE_INVALID;
+  struct cam_req_mgr_message sof_msg;
+  bool sof_ready = false;
+};
+#endif
 
 class CameraState {
 public:
@@ -64,6 +92,15 @@ public:
   bool skipped;
 
   CameraBuf buf;
+#ifdef USE_V4L2_EVENT_FOR_CAM_SYNC
+  bool handle_camera_sync_event(struct cam_sync_ev_header *event_data);
+  void handle_req_finished(int req_id);
+  void reset_all_maps();
+
+  std::map<int, CameraRequestInfo> req_info_map;
+  std::map<int, int> sync_obj_to_req_id;
+#endif
+
 };
 
 typedef struct MultiCameraState {
