@@ -55,7 +55,6 @@ function install_ubuntu_common_requirements() {
     ocl-icd-libopencl1 \
     ocl-icd-opencl-dev \
     clinfo \
-    python-dev \
     qml-module-qtquick2 \
     qtmultimedia5-dev \
     qtlocation5-dev \
@@ -68,22 +67,20 @@ function install_ubuntu_common_requirements() {
     valgrind
 }
 
-# Install Ubuntu 21.10 packages
-function install_ubuntu_latest_requirements() {
-  install_ubuntu_common_requirements
-
-  sudo apt-get install -y --no-install-recommends \
-    qtbase5-dev \
-    qtchooser \
-    qt5-qmake \
-    qtbase5-dev-tools
-}
-
-# Install Ubuntu 20.04 packages
+# Install Ubuntu 22.04 packages
 function install_ubuntu_lts_requirements() {
   install_ubuntu_common_requirements
 
   sudo apt-get install -y --no-install-recommends \
+    python-dev-is-python3
+}
+
+# Install Ubuntu 20.04 packages
+function install_ubuntu_legacy_requirements() {
+  install_ubuntu_common_requirements
+
+  sudo apt-get install -y --no-install-recommends \
+    python-dev \
     libavresample-dev \
     qt5-default
 }
@@ -92,14 +89,14 @@ function install_ubuntu_lts_requirements() {
 if [ -f "/etc/os-release" ]; then
   source /etc/os-release
   case "$ID $VERSION_ID" in
-    "ubuntu 21.10")
-      install_ubuntu_latest_requirements
-      ;;
     "ubuntu 20.04")
+      install_ubuntu_legacy_requirements
+      ;;
+    "ubuntu 22.04")
       install_ubuntu_lts_requirements
       ;;
     *)
-      echo "$ID $VERSION_ID is unsupported. This setup script is written for Ubuntu 20.04."
+      echo "$ID $VERSION_ID is unsupported. This setup script is written for Ubuntu 22.04."
       read -p "Would you like to attempt installation anyway? " -n 1 -r
       echo ""
       if [[ ! $REPLY =~ ^[Yy]$ ]]; then
