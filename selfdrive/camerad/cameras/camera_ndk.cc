@@ -80,19 +80,6 @@ void run_camera(CameraState *s) {
   double t = 1e-9 * nanos_since_boot();
   int frame_cnt = 0;
   while (!do_exit && s->m_camera_ready) {
-/*
-    cv::Mat frame_mat, transformed_mat;
-    video_cap >> frame_mat;
-    if (frame_mat.empty()) continue;
-
-    cv::warpPerspective(frame_mat, transformed_mat, transform, size, cv::INTER_LINEAR, cv::BORDER_CONSTANT, 0);
-
-    s->buf.camera_bufs_metadata[buf_idx] = {.frame_id = frame_id};
-
-    auto &buf = s->buf.camera_bufs[buf_idx];
-    int transformed_size = transformed_mat.total() * transformed_mat.elemSize();
-    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, 0, transformed_size, transformed_mat.data, 0, NULL, NULL));
-*/
     AImage *image = s->m_image_reader->GetLatestImage();
     if (image == nullptr) {
       util::sleep_for(1);
@@ -112,11 +99,16 @@ void run_camera(CameraState *s) {
     assert(status == AMEDIA_OK && planeCount == 3);
     uint8_t *y_data = nullptr, *u_data = nullptr, *v_data = nullptr;
     int y_len = 0, u_len = 0, v_len = 0;
+    auto &buf = s->buf.camera_bufs[buf_idx];
     AImage_getPlaneData(image, 0, &y_data, &y_len);
+    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, 0, y_len, y_data, 0, NULL, NULL));
     AImage_getPlaneData(image, 1, &u_data, &u_len);
+    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, y_len, u_len, u_data, 0, NULL, NULL));
     AImage_getPlaneData(image, 2, &v_data, &v_len);
+    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, y_len + u_len, v_len, v_data, 0, NULL, NULL));
     //LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
     AImage_delete(image);
+    s->buf.camera_bufs_metadata[buf_idx] = {.frame_id = frame_id};
     //buffer.bits;
     s->buf.queue(buf_idx);
 
