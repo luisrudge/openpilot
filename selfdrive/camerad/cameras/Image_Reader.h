@@ -77,7 +77,7 @@ class Image_Reader {
    *    Human Rotation (rotated degree related to Phone native orientation
    */
   void SetPresentRotation(int32_t angle);
-
+  inline const AImageReader* reader() { return reader_; }
  private:
   int32_t presentRotation_;
   AImageReader* reader_;

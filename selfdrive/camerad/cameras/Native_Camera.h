@@ -10,26 +10,6 @@
 
 enum camera_type { BACK_CAMERA, FRONT_CAMERA };
 
-// TODO - reasonable actions with callbacks
-// Camera Callbacks
-static void CameraDeviceOnDisconnected(void* context, ACameraDevice* device) {
-  LOGD("Camera(id: %s) is diconnected.\n", ACameraDevice_getId(device));
-}
-static void CameraDeviceOnError(void* context, ACameraDevice* device,
-                                int error) {
-  LOGE("Error(code: %d) on Camera(id: %s).\n", error,
-       ACameraDevice_getId(device));
-}
-// Capture Callbacks
-static void CaptureSessionOnReady(void* context,
-                                  ACameraCaptureSession* session) {
-  LOGD("Session is ready.\n");
-}
-static void CaptureSessionOnActive(void* context,
-                                   ACameraCaptureSession* session) {
-  LOGD("Session is activated.\n");
-}
-
 // This class was created since if you want to alternate cameras
 // you need to do a proper cleanup and setup and creating a
 // separate class was the best OOP move

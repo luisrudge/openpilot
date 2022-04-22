@@ -1,6 +1,26 @@
 #include "selfdrive/camerad/cameras/Native_Camera.h"
 #include <cassert>
 
+// TODO - reasonable actions with callbacks
+// Camera Callbacks
+static void CameraDeviceOnDisconnected(void* context, ACameraDevice* device) {
+  LOGD("Camera(id: %s) is diconnected.\n", ACameraDevice_getId(device));
+}
+static void CameraDeviceOnError(void* context, ACameraDevice* device,
+                                int error) {
+  LOGE("Error(code: %d) on Camera(id: %s).\n", error,
+       ACameraDevice_getId(device));
+}
+// Capture Callbacks
+static void CaptureSessionOnReady(void* context,
+                                  ACameraCaptureSession* session) {
+  LOGD("Session is ready.\n");
+}
+static void CaptureSessionOnActive(void* context,
+                                   ACameraCaptureSession* session) {
+  LOGD("Session is activated.\n");
+}
+
 Native_Camera::Native_Camera(camera_type type) {
 
   ACameraMetadata* cameraMetadata = nullptr;
@@ -94,12 +114,13 @@ bool Native_Camera::MatchCaptureSizeRequest(ImageFormat* resView, int32_t width,
     int32_t input = entry.data.i32[i * 4 + 3];
     int32_t format = entry.data.i32[i * 4 + 0];
     if (input) continue;
-
-    if (format == AIMAGE_FORMAT_YUV_420_888 || format == AIMAGE_FORMAT_JPEG) {
-      Display_Dimension res(entry.data.i32[i * 4 + 1],
+    Display_Dimension res(entry.data.i32[i * 4 + 1],
                            entry.data.i32[i * 4 + 2]);
+    if(format != 0)
+      LOGD("fmt: 0x%X, w: %d, h: %d", format, res.width(), res.height());
+    if (format == AIMAGE_FORMAT_RAW10) {
       if (!disp.IsSameRatio(res)) continue;
-      if (format == AIMAGE_FORMAT_YUV_420_888 && foundRes > res) {
+      if (foundRes > res) {
         foundIt = true;
         foundRes = res;
       }
@@ -140,7 +161,9 @@ bool Native_Camera::CreateCaptureSession(ANativeWindow* window) {
   // native side
   cameraStatus = ACameraDevice_createCaptureRequest(m_camera_device,
                                                     TEMPLATE_RECORD, &m_capture_request);
-  assert(cameraStatus == ACAMERA_OK);
+  LOGD("ACameraDevice_createCaptureRequest status %d", cameraStatus);
+  if(cameraStatus != ACAMERA_OK)
+    return false;
 
   ACaptureRequest_addTarget(m_capture_request, m_camera_output_target);
 
