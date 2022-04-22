@@ -21,7 +21,11 @@
 #ifdef QCOM
 #ifdef ANDROID_9
 #include "CL/cl_ext_qcom.h"
+#ifdef USE_NDK_CAM
 #include "selfdrive/camerad/cameras/camera_pixel3.h"
+#else
+#include "selfdrive/camerad/cameras/camera_ndk.h"
+#endif
 #else
 #include "CL/cl_ext_qcom.h"
 #include "selfdrive/camerad/cameras/camera_qcom.h"

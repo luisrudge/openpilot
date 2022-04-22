@@ -99,6 +99,9 @@ if arch == "aarch64" or arch == "larch64":
     "/system/vendor/lib64",
     f"#third_party/acados/{arch}/lib",
   ]
+  # Fix for liblzma.so conflict
+  if android_version == '9':
+    libpath = ["/system/lib64", *libpath]
 
   if arch == "larch64":
     libpath += [
