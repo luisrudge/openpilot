@@ -49,12 +49,13 @@ Image_Reader::Image_Reader(ImageFormat *res, enum AIMAGE_FORMATS format)
                                            MAX_BUF_COUNT, &reader_);
   assert(reader_ && status == AMEDIA_OK);
 
+#if false
   AImageReader_ImageListener listener{
       .context = this,
       .onImageAvailable = OnImageCallback,
   };
   AImageReader_setImageListener(reader_, &listener);
-
+#endif
   // assuming 4 bit per pixel max
   LOGE("Image Buffer Size: %d", res->width * res->height * 4);
   imageBuffer_ = (uint8_t*)malloc(res->width * res->height * 4);

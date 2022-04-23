@@ -93,20 +93,21 @@ void run_camera(CameraState *s) {
 */
     AImage *image = s->m_image_reader->GetLatestImage();
     if (image == nullptr) {
-      sleep(1);
+      util::sleep_for(10);
       continue;
     }
     int planeCount;
     int32_t format;
     media_status_t status = AImageReader_getFormat(s->m_image_reader->reader(), &format);
     assert(status == AMEDIA_OK);
-    LOGD("Format: %d", format);
     status = AImage_getNumberOfPlanes(image, &planeCount);
-    assert(status == AMEDIA_OK && planeCount == 1);
-    uint8_t *data = nullptr;
-    int len = 0;
-    AImage_getPlaneData(image, 0, &data, &len);
-    LOGD("Image len:: %d", len);
+    assert(status == AMEDIA_OK && planeCount == 3);
+    uint8_t *y_data = nullptr, *u_data = nullptr, *v_data = nullptr;
+    int y_len = 0, u_len = 0, v_len = 0;
+    AImage_getPlaneData(image, 0, &y_data, &y_len);
+    AImage_getPlaneData(image, 1, &u_data, &u_len);
+    AImage_getPlaneData(image, 2, &v_data, &v_len);
+    //LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
     AImage_delete(image);
     //buffer.bits;
     s->buf.queue(buf_idx);
