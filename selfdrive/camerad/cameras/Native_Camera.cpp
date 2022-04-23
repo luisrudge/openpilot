@@ -1,6 +1,26 @@
 #include "selfdrive/camerad/cameras/Native_Camera.h"
 #include <cassert>
 
+// TODO - reasonable actions with callbacks
+// Camera Callbacks
+static void CameraDeviceOnDisconnected(void* context, ACameraDevice* device) {
+  LOGD("Camera(id: %s) is diconnected.\n", ACameraDevice_getId(device));
+}
+static void CameraDeviceOnError(void* context, ACameraDevice* device,
+                                int error) {
+  LOGE("Error(code: %d) on Camera(id: %s).\n", error,
+       ACameraDevice_getId(device));
+}
+// Capture Callbacks
+static void CaptureSessionOnReady(void* context,
+                                  ACameraCaptureSession* session) {
+  LOGD("Session is ready.\n");
+}
+static void CaptureSessionOnActive(void* context,
+                                   ACameraCaptureSession* session) {
+  LOGD("Session is activated.\n");
+}
+
 Native_Camera::Native_Camera(camera_type type) {
 
   ACameraMetadata* cameraMetadata = nullptr;
@@ -74,35 +94,34 @@ Native_Camera::~Native_Camera() {
   ACameraManager_delete(m_camera_manager);
 }
 
-bool Native_Camera::MatchCaptureSizeRequest(ImageFormat* resView, int32_t width, int32_t height) {
+bool Native_Camera::MatchCaptureSizeRequest(ImageFormat* resView, int32_t width, int32_t height, enum AIMAGE_FORMATS fmt) {
+  LOGD("Match w: %d, h: %d, fmt: 0x%X", width, height, fmt);
   Display_Dimension disp(width, height);
   if (m_camera_orientation == 90 || m_camera_orientation == 270) {
     disp.Flip();
   }
 
   ACameraMetadata* metadata;
-  ACameraManager_getCameraCharacteristics(m_camera_manager,
-                                          m_selected_camera_id, &metadata);
+  ACameraManager_getCameraCharacteristics(m_camera_manager, m_selected_camera_id, &metadata);
   ACameraMetadata_const_entry entry;
   ACameraMetadata_getConstEntry(
       metadata, ACAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS, &entry);
   // format of the data: format, width, height, input?, type int32
   bool foundIt = false;
-  Display_Dimension foundRes(1000, 1000); // max resolution for current gen phones
+  Display_Dimension foundRes(1920, 1080); // max resolution for current gen phones
 
   for (int i = 0; i < entry.count; ++i) {
     int32_t input = entry.data.i32[i * 4 + 3];
     int32_t format = entry.data.i32[i * 4 + 0];
     if (input) continue;
-
-    if (format == AIMAGE_FORMAT_YUV_420_888 || format == AIMAGE_FORMAT_JPEG) {
-      Display_Dimension res(entry.data.i32[i * 4 + 1],
+    Display_Dimension res(entry.data.i32[i * 4 + 1],
                            entry.data.i32[i * 4 + 2]);
-      if (!disp.IsSameRatio(res)) continue;
-      if (format == AIMAGE_FORMAT_YUV_420_888 && foundRes > res) {
-        foundIt = true;
-        foundRes = res;
-      }
+    if(format != 0)
+      LOGD("fmt: 0x%X, w: %d, h: %d", format, res.width(), res.height());
+    if (format == fmt && width == res.width() && height == res.height()) {
+      foundIt = true;
+      foundRes = res;
+      break;
     }
   }
 
@@ -110,15 +129,9 @@ bool Native_Camera::MatchCaptureSizeRequest(ImageFormat* resView, int32_t width,
     resView->width = foundRes.org_width();
     resView->height = foundRes.org_height();
   } else {
-    if (disp.IsPortrait()) {
-      resView->width = 480;
-      resView->height = 640;
-    } else {
-      resView->width = 640;
-      resView->height = 480;
-    }
+    return false;
   }
-  resView->format = AIMAGE_FORMAT_YUV_420_888;
+  resView->format = fmt;
   LOGD("--- W -- H -- %d -- %d",resView->width,resView->height);
   return foundIt;
 }
@@ -140,7 +153,9 @@ bool Native_Camera::CreateCaptureSession(ANativeWindow* window) {
   // native side
   cameraStatus = ACameraDevice_createCaptureRequest(m_camera_device,
                                                     TEMPLATE_RECORD, &m_capture_request);
-  assert(cameraStatus == ACAMERA_OK);
+  LOGD("ACameraDevice_createCaptureRequest status %d", cameraStatus);
+  if(cameraStatus != ACAMERA_OK)
+    return false;
 
   ACaptureRequest_addTarget(m_capture_request, m_camera_output_target);
 

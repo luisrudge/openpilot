@@ -73,6 +73,7 @@ void Image_Reader::ImageCallback(AImageReader *reader) {
   int32_t format;
   media_status_t status = AImageReader_getFormat(reader, &format);
   assert(status == AMEDIA_OK);
+  LOGD("format: 0x%X", format);
   if (format == AIMAGE_FORMAT_JPEG) {
     // Create a thread and write out the jpeg files
     AImage *image = nullptr;

@@ -13,7 +13,7 @@ if arch == "aarch64":
       cameras = ['cameras/camera_ndk.cc', 'cameras/Image_Reader.cpp', 'cameras/Native_Camera.cpp']
       env = env.Clone()
       env.Append(CXXFLAGS = '-D__ANDROID_API__=28 -DUSE_NDK_CAM')
-      libs += ['lzma', 'icuuc', 'icui18n', 'nativewindow', 'camera2ndk', 'mediandk']
+      libs += ['utils', 'binder', 'lzma', 'icuuc', 'icui18n', 'nativewindow', 'camera2ndk', 'mediandk']
     else:
       libs += ['atomic']
       cameras = ['cameras/camera_pixel3.cc']
