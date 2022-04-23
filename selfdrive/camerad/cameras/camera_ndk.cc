@@ -77,6 +77,8 @@ void run_camera(CameraState *s) {
 
   ANativeWindow* image_reader_window = s->m_image_reader->GetNativeWindow();
   s->m_camera_ready = s->m_native_camera->CreateCaptureSession(image_reader_window);
+  double t = 1e-9 * nanos_since_boot();
+  int frame_cnt = 0;
   while (!do_exit && s->m_camera_ready) {
 /*
     cv::Mat frame_mat, transformed_mat;
@@ -93,8 +95,14 @@ void run_camera(CameraState *s) {
 */
     AImage *image = s->m_image_reader->GetLatestImage();
     if (image == nullptr) {
-      util::sleep_for(10);
+      util::sleep_for(1);
       continue;
+    }
+    frame_cnt++;
+    if(frame_cnt % 100 == 0) {
+      LOGD("%.1f fps", 100.0 / (1e-9 * nanos_since_boot() - t));
+      t = 1e-9 * nanos_since_boot();
+      frame_cnt = 0;
     }
     int planeCount;
     int32_t format;
