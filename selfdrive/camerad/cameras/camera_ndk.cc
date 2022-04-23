@@ -68,24 +68,15 @@ void run_camera(CameraState *s) {
   size_t buf_idx = 0;
 
   s->m_native_camera = new Native_Camera(s->m_selected_camera_type);
-<<<<<<< HEAD
   enum AIMAGE_FORMATS fmt = AIMAGE_FORMAT_YUV_420_888;
   s->m_native_camera->MatchCaptureSizeRequest(&s->m_view, s->width, s->height, fmt);
   assert(s->m_view.width && s->m_view.height);
   LOGD("cam type: %d, matched w: %d, h: %d", s->m_selected_camera_type, s->m_view.width, s->m_view.height);
   s->m_image_reader = new Image_Reader(&s->m_view, fmt);
-=======
-  s->m_native_camera->MatchCaptureSizeRequest(&s->m_view, s->width, s->height);
-  assert(s->m_view.width && s->m_view.height);
-  LOGD("matched w: %d, h: %d", s->m_view.width, s->m_view.height);
-
-  s->m_image_reader = new Image_Reader(&s->m_view, AIMAGE_FORMAT_RAW10);
->>>>>>> dbe473f12f8fe24a6fad0605fbb6c106dbb03af0
   s->m_image_reader->SetPresentRotation(s->m_native_camera->GetOrientation());
 
   ANativeWindow* image_reader_window = s->m_image_reader->GetNativeWindow();
   s->m_camera_ready = s->m_native_camera->CreateCaptureSession(image_reader_window);
-<<<<<<< HEAD
   double t = 1e-9 * nanos_since_boot();
   int frame_cnt = 0;
   while (!do_exit && s->m_camera_ready) {
@@ -118,39 +109,6 @@ void run_camera(CameraState *s) {
     //LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
     AImage_delete(image);
     s->buf.camera_bufs_metadata[buf_idx] = {.frame_id = frame_id};
-=======
-  while (!do_exit && s->m_camera_ready) {
-/*
-    cv::Mat frame_mat, transformed_mat;
-    video_cap >> frame_mat;
-    if (frame_mat.empty()) continue;
-
-    cv::warpPerspective(frame_mat, transformed_mat, transform, size, cv::INTER_LINEAR, cv::BORDER_CONSTANT, 0);
-
-    s->buf.camera_bufs_metadata[buf_idx] = {.frame_id = frame_id};
-
-    auto &buf = s->buf.camera_bufs[buf_idx];
-    int transformed_size = transformed_mat.total() * transformed_mat.elemSize();
-    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, 0, transformed_size, transformed_mat.data, 0, NULL, NULL));
-*/
-    AImage *image = s->m_image_reader->GetLatestImage();
-    if (image == nullptr) { 
-      sleep(1);
-      continue;
-    }
-    int planeCount;
-    int32_t format;
-    media_status_t status = AImageReader_getFormat(s->m_image_reader->reader(), &format);
-    assert(status == AMEDIA_OK);
-    LOGD("Format: %d", format);
-    status = AImage_getNumberOfPlanes(image, &planeCount);
-    assert(status == AMEDIA_OK && planeCount == 1);
-    uint8_t *data = nullptr;
-    int len = 0;
-    AImage_getPlaneData(image, 0, &data, &len);
-    LOGD("Image len:: %d", len);
-    AImage_delete(image);
->>>>>>> dbe473f12f8fe24a6fad0605fbb6c106dbb03af0
     //buffer.bits;
     s->buf.queue(buf_idx);
 
@@ -176,19 +134,12 @@ void cameras_init(VisionIpcServer *v, MultiCameraState *s, cl_device_id device_i
               VISION_STREAM_RGB_ROAD, VISION_STREAM_ROAD, BACK_CAMERA);
   s->road_cam.width = FRAME_WIDTH;
   s->road_cam.height = FRAME_HEIGHT;
-<<<<<<< HEAD
 #if false
-=======
-
->>>>>>> dbe473f12f8fe24a6fad0605fbb6c106dbb03af0
   camera_init(v, &s->driver_cam, CAMERA_ID_LGC615, 10, device_id, ctx,
               VISION_STREAM_RGB_DRIVER, VISION_STREAM_DRIVER, FRONT_CAMERA);
   s->driver_cam.width = FRAME_WIDTH_FRONT;
   s->driver_cam.height = FRAME_HEIGHT_FRONT;
-<<<<<<< HEAD
 #endif
-=======
->>>>>>> dbe473f12f8fe24a6fad0605fbb6c106dbb03af0
   s->pm = new PubMaster({"roadCameraState", "driverCameraState", "thumbnail"});
 }
 
