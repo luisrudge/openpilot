@@ -248,6 +248,22 @@ void CameraBuf::queue(size_t buf_idx) {
   safe_queue.push(buf_idx);
 }
 
+void CameraBuf::send_yuv(uint8_t *y_data, int y_len, uint8_t *u_data, int u_len, uint8_t *v_data, int v_len, uint32_t frame_id, const FrameMetadata& meta_data) {
+  cur_yuv_buf = vipc_server->get_buffer(yuv_type);
+  CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, y_len, y_data, 0, NULL, NULL));
+  CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, y_len, u_len, u_data, 0, NULL, NULL));
+  CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, y_len + u_len, v_len, v_data, 0, NULL, NULL));
+  cur_yuv_buf->set_frame_id(frame_id);
+  VisionIpcBufExtra extra = {
+                        meta_data.frame_id,
+                        meta_data.timestamp_sof,
+                        meta_data.timestamp_eof,
+  };
+
+  vipc_server->send(cur_yuv_buf, &extra);
+
+}
+
 // common functions
 
 void fill_frame_data(cereal::FrameData::Builder &framed, const FrameMetadata &frame_data) {

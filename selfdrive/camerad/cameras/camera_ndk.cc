@@ -63,9 +63,8 @@ void camera_init(VisionIpcServer * v, CameraState *s, int camera_id, unsigned in
   s->m_selected_camera_type = t;
 }
 
-void run_camera(CameraState *s) {
+void run_camera(CameraState *s, MultiCameraState *mcs) {
   uint32_t frame_id = 0;
-  size_t buf_idx = 0;
 
   s->m_native_camera = new Native_Camera(s->m_selected_camera_type);
   enum AIMAGE_FORMATS fmt = AIMAGE_FORMAT_YUV_420_888;
@@ -99,27 +98,31 @@ void run_camera(CameraState *s) {
     assert(status == AMEDIA_OK && planeCount == 3);
     uint8_t *y_data = nullptr, *u_data = nullptr, *v_data = nullptr;
     int y_len = 0, u_len = 0, v_len = 0;
-    auto &buf = s->buf.camera_bufs[buf_idx];
     AImage_getPlaneData(image, 0, &y_data, &y_len);
-    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, 0, y_len, y_data, 0, NULL, NULL));
     AImage_getPlaneData(image, 1, &u_data, &u_len);
-    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, y_len, u_len, u_data, 0, NULL, NULL));
     AImage_getPlaneData(image, 2, &v_data, &v_len);
-    CL_CHECK(clEnqueueWriteBuffer(buf.copy_q, buf.buf_cl, CL_TRUE, y_len + u_len, v_len, v_data, 0, NULL, NULL));
     //LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
     AImage_delete(image);
-    s->buf.camera_bufs_metadata[buf_idx] = {.frame_id = frame_id};
     //buffer.bits;
-    s->buf.queue(buf_idx);
+    MessageBuilder msg;
+    auto framed = msg.initEvent().initRoadCameraState();
+    FrameMetadata meta_data = {};
+    meta_data.frame_id = frame_id;
+    meta_data.timestamp_sof = nanos_since_boot();
+    s->buf.send_yuv(y_data, y_len, u_data, u_len, v_data, v_len, frame_id, meta_data);
+    fill_frame_data(framed, meta_data);
+    framed.setImage(kj::arrayPtr((const uint8_t *)s->buf.cur_yuv_buf->addr, s->buf.cur_yuv_buf->len));
+    framed.setTransform(s->buf.yuv_transform.v);
+    mcs->pm->send("roadCameraState", msg);
 
+    // TODO: publish_thumbnail
     ++frame_id;
-    buf_idx = (buf_idx + 1) % FRAME_BUF_COUNT;
   }
 }
 
-static void road_camera_thread(CameraState *s) {
+static void road_camera_thread(CameraState *s, MultiCameraState *mcs) {
   util::set_thread_name("webcam_road_camera_thread");
-  run_camera(s);
+  run_camera(s, mcs);
 }
 #if false
 void driver_camera_thread(CameraState *s) {
@@ -193,7 +196,7 @@ void cameras_run(MultiCameraState *s) {
   driver_camera_thread(&s->driver_cam);
   t_rear.join();
 #else
-  road_camera_thread(&s->road_cam);
+  road_camera_thread(&s->road_cam, s);
 #endif
 
   for (auto &t : threads) t.join();

@@ -123,6 +123,9 @@ public:
   bool acquire();
   void release();
   void queue(size_t buf_idx);
+#ifdef YUV_ONLY
+  void send_yuv(uint8_t *y_data, int y_len, uint8_t *u_data, int u_len, uint8_t *v_data, int v_len, uint32_t frame_id, const FrameMetadata &meta_data);
+#endif
 };
 
 typedef void (*process_thread_cb)(MultiCameraState *s, CameraState *c, int cnt);
