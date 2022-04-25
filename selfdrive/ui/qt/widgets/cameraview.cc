@@ -51,6 +51,8 @@ const char frame_fragment_shader[] =
   "  float u = texture(uTextureU, vTexCoord).r - 0.5;\n"
   "  float v = texture(uTextureV, vTexCoord).r - 0.5;\n"
 #endif
+  "  float u = texture(uTextureU, vTexCoord).r - 0.5;\n"
+  "  float v = texture(uTextureV, vTexCoord).r - 0.5;\n"
   "  float r = y + 1.402 * v;\n"
   "  float g = y - 0.344 * u - 0.714 * v;\n"
   "  float b = y + 1.772 * u;\n"
@@ -252,32 +254,18 @@ void CameraViewWidget::paintGL() {
 
   glUseProgram(program->programId());
 #ifdef ANDROID_9
-  uint8_t *address[2] = {latest_frame->y, latest_frame->u};
   for (int i = 0; i < 2; ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, textures[i]);
-    int width = i == 0 ? stream_width : stream_width / 2;
-    int height = i == 0 ? stream_height : stream_height / 2;
-    if(i == 0)
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, address[i]);
-    else
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_UNSIGNED_BYTE, address[i]);
-    //LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
     assert(glGetError() == GL_NO_ERROR);
   }
 #else
-  uint8_t *address[3] = {latest_frame->y, latest_frame->u, latest_frame->v};
   for (int i = 0; i < 3; ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, textures[i]);
-    int width = i == 0 ? stream_width : stream_width / 2;
-    int height = i == 0 ? stream_height : stream_height / 2;
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, address[i]);
     assert(glGetError() == GL_NO_ERROR);
   }
 #endif
-
-  glActiveTexture(GL_TEXTURE0);  // qt requires active texture 0
 
   glUniformMatrix4fv(program->uniformLocation("uTransform"), 1, GL_TRUE, frame_mat.v);
   assert(glGetError() == GL_NO_ERROR);
@@ -285,11 +273,13 @@ void CameraViewWidget::paintGL() {
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (const void *)0);
   glDisableVertexAttribArray(0);
   glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glActiveTexture(GL_TEXTURE0);
 }
 
 void CameraViewWidget::vipcConnected(VisionIpcClient *vipc_client) {
   makeCurrent();
-  latest_frame = nullptr;
+  latest_texture_id = -1;
   stream_width = vipc_client->buffers[0].width;
   stream_height = vipc_client->buffers[0].height;
 
@@ -323,7 +313,6 @@ void CameraViewWidget::vipcConnected(VisionIpcClient *vipc_client) {
     assert(glGetError() == GL_NO_ERROR);
   }
 #endif
-
   updateFrameMat(width(), height());
 }
 
@@ -346,6 +335,63 @@ void CameraViewWidget::vipcThread() {
     }
 
     if (VisionBuf *buf = vipc_client->recv(nullptr, 1000)) {
+      {
+        std::lock_guard lk(lock);
+
+#ifdef ANDROID_9
+        for (int i = 0; i < 2; ++i) {
+          void *texture_buffer = gl_buffer->map(QOpenGLBuffer::WriteOnly);
+          if (texture_buffer == nullptr) {
+            LOGE("gl_buffer->map returned nullptr");
+            continue;
+          }
+          int width = i == 0 ? stream_width : stream_width / 2;
+          int height = i == 0 ? stream_height : stream_height / 2;
+          uint8_t* tex_buf[] = {buf->y, buf->u, buf->v};
+          memcpy(texture_buffer, tex_buf[i], width*height);
+          gl_buffer->unmap();
+          // copy pixels from PBO to texture object
+          glBindTexture(GL_TEXTURE_2D, textures[i]);
+          if(i == 0)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+          else
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_UNSIGNED_BYTE, 0);
+        }
+#else
+        for (int i = 0; i < 3; i++) {
+          void *texture_buffer = gl_buffer->map(QOpenGLBuffer::WriteOnly);
+
+          if (texture_buffer == nullptr) {
+            LOGE("gl_buffer->map returned nullptr");
+            continue;
+          }
+
+          int width = i == 0 ? stream_width : stream_width / 2;
+          int height = i == 0 ? stream_height : stream_height / 2;
+          uint8_t* tex_buf[] = {buf->y, buf->u, buf->v};
+          memcpy(texture_buffer, tex_buf[i], width*height);
+          gl_buffer->unmap();
+
+          // copy pixels from PBO to texture object
+          glBindTexture(GL_TEXTURE_2D, textures[i]);
+          glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+        }
+#endif
+        glBindTexture(GL_TEXTURE_2D, 0);
+        assert(glGetError() == GL_NO_ERROR);
+
+        wait_fence.reset(new WaitFence());
+
+        // Ensure the fence is in the GPU command queue, or waiting on it might block
+        // https://www.khronos.org/opengl/wiki/Sync_Object#Flushing_and_contexts
+        glFlush();
+
+        latest_texture_id = buf->idx;
+      }
+      // Schedule update. update() will be invoked on the gui thread.
+      QMetaObject::invokeMethod(this, "update");
+
+      // TODO: remove later, it's only connected by DriverView.
       emit vipcThreadFrameReceived(buf);
     }
   }
