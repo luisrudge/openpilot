@@ -264,11 +264,12 @@ void CameraBuf::send_yuv(AImage *image, uint32_t frame_id, const FrameMetadata& 
   AImage_getPlaneRowStride(image, 0, &yStride);
   AImage_getPlaneRowStride(image, 1, &uvStride);
   AImage_getPlaneData(image, 0, &yPixel, &yLen);
-  AImage_getPlaneData(image, 1, &vPixel, &vLen);
-  AImage_getPlaneData(image, 2, &uPixel, &uLen);
+  AImage_getPlaneData(image, 1, &uPixel, &uLen);
+  AImage_getPlaneData(image, 2, &vPixel, &vLen);
   AImage_getPlanePixelStride(image, 1, &uvPixelStride);
-  assert(uvPixelStride == 2); // NV12 U/V interleaved format
-  assert(vPixel == uPixel + 1);
+  // NV21 U/V interleaved format
+  assert(uvPixelStride == 2);
+  assert(uPixel == vPixel + 1);
   int32_t height = std::min(rgb_height, (srcRect.bottom - srcRect.top));
   //int32_t width = std::min(rgb_width, (srcRect.right - srcRect.left));
 //  LOGD("w1: %d w2: %d, h1: %d, h2: %d, yStride: %d, uvStride: %d, yPixel %p, yLen: %d, cur_yuv_buf: %p",
@@ -277,7 +278,7 @@ void CameraBuf::send_yuv(AImage *image, uint32_t frame_id, const FrameMetadata& 
   for (int32_t y = 0; y < height; y++) {
     const uint8_t *pY = yPixel + yStride * (y + srcRect.top) + srcRect.left;
     int32_t uv_row_start = uvStride * ((y + srcRect.top) >> 1);
-    const uint8_t *pUV = uPixel + uv_row_start + (srcRect.left >> 1);
+    const uint8_t *pUV = vPixel + uv_row_start + (srcRect.left >> 1);
     //LOGD("Copy y from %d to %d", yStride * (y + srcRect.top) + srcRect.left, y * rgb_width);
     memcpy(dest + y * rgb_width, pY, rgb_width);
     if (y % 2 == 0) {

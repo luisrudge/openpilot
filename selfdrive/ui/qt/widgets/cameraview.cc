@@ -45,8 +45,8 @@ const char frame_fragment_shader[] =
   "void main() {\n"
   "  float y = texture(uTextureY, vTexCoord).r;\n"
 #ifdef ANDROID_9
-  "  float u = texture(uTextureUV, vTexCoord).r - 0.5;\n"
-  "  float v = texture(uTextureUV, vTexCoord).g - 0.5;\n"
+  "  float u = texture(uTextureUV, vTexCoord).g - 0.5;\n"
+  "  float v = texture(uTextureUV, vTexCoord).r - 0.5;\n"
 #else
   "  float u = texture(uTextureU, vTexCoord).r - 0.5;\n"
   "  float v = texture(uTextureV, vTexCoord).r - 0.5;\n"
@@ -258,7 +258,7 @@ void CameraViewWidget::paintGL() {
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, address[i]);
     else
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_UNSIGNED_BYTE, address[i]);
-    LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
+    //LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
     assert(glGetError() == GL_NO_ERROR);
   }
 #else
@@ -303,7 +303,7 @@ void CameraViewWidget::vipcConnected(VisionIpcClient *vipc_client) {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, nullptr);
     else
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, nullptr);
-    LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
+    //LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
     assert(glGetError() == GL_NO_ERROR);
   }
 #else

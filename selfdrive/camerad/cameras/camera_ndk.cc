@@ -72,8 +72,6 @@ void run_camera(CameraState *s, MultiCameraState *mcs) {
   assert(s->m_view.width && s->m_view.height);
   LOGD("cam type: %d, matched w: %d, h: %d", s->m_selected_camera_type, s->m_view.width, s->m_view.height);
   s->m_image_reader = new Image_Reader(&s->m_view, fmt);
-  s->m_image_reader->SetPresentRotation(s->m_native_camera->GetOrientation());
-
   ANativeWindow* image_reader_window = s->m_image_reader->GetNativeWindow();
   s->m_camera_ready = s->m_native_camera->CreateCaptureSession(image_reader_window);
   double t = 1e-9 * nanos_since_boot();
