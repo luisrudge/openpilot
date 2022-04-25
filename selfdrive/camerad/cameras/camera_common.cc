@@ -39,6 +39,10 @@
 #include "selfdrive/camerad/cameras/camera_replay.h"
 #endif
 
+#ifdef YUV_ONLY
+#include <media/NdkImageReader.h>
+#endif
+
 ExitHandler do_exit;
 
 class Debayer {
@@ -248,11 +252,33 @@ void CameraBuf::queue(size_t buf_idx) {
   safe_queue.push(buf_idx);
 }
 
-void CameraBuf::send_yuv(uint8_t *y_data, int y_len, uint8_t *u_data, int u_len, uint8_t *v_data, int v_len, uint32_t frame_id, const FrameMetadata& meta_data) {
+#ifdef YUV_ONLY
+void CameraBuf::send_yuv(AImage *image, uint32_t frame_id, const FrameMetadata& meta_data) {
   cur_yuv_buf = vipc_server->get_buffer(yuv_type);
-  CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, y_len, y_data, 0, NULL, NULL));
-  CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, y_len, u_len, u_data, 0, NULL, NULL));
-  CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, y_len + u_len, v_len, v_data, 0, NULL, NULL));
+  int32_t yStride, uvStride;
+  uint8_t *yPixel, *uPixel, *vPixel;
+  int32_t yLen, uLen, vLen;
+  int32_t uvPixelStride;
+  AImageCropRect srcRect;
+  AImage_getCropRect(image, &srcRect);
+  AImage_getPlaneRowStride(image, 0, &yStride);
+  AImage_getPlaneRowStride(image, 1, &uvStride);
+  AImage_getPlaneData(image, 0, &yPixel, &yLen);
+  AImage_getPlaneData(image, 1, &vPixel, &vLen);
+  AImage_getPlaneData(image, 2, &uPixel, &uLen);
+  AImage_getPlanePixelStride(image, 1, &uvPixelStride);
+  int32_t height = std::min(rgb_height, (srcRect.bottom - srcRect.top));
+  //int32_t width = std::min(rgb_width, (srcRect.right - srcRect.left));
+  for (int32_t y = 0; y < height; y++) {
+    const uint8_t *pY = yPixel + yStride * (y + srcRect.top) + srcRect.left;
+    int32_t uv_row_start = uvStride * ((y + srcRect.top) >> 1);
+    const uint8_t *pU = uPixel + uv_row_start + (srcRect.left >> 1);
+    const uint8_t *pV = vPixel + uv_row_start + (srcRect.left >> 1);
+    CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, y * rgb_width, pY, 0, NULL, NULL));
+    CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, rgb_height * rgb_width / 2 + y * rgb_width / 2, pU, 0, NULL, NULL));
+    CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, rgb_height * rgb_width *3 / 2 + y * rgb_width / 2, pV, 0, NULL, NULL));
+  }
+
   cur_yuv_buf->set_frame_id(frame_id);
   VisionIpcBufExtra extra = {
                         meta_data.frame_id,
@@ -263,6 +289,7 @@ void CameraBuf::send_yuv(uint8_t *y_data, int y_len, uint8_t *u_data, int u_len,
   vipc_server->send(cur_yuv_buf, &extra);
 
 }
+#endif
 
 // common functions
 

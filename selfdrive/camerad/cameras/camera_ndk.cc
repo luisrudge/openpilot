@@ -101,19 +101,19 @@ void run_camera(CameraState *s, MultiCameraState *mcs) {
     AImage_getPlaneData(image, 0, &y_data, &y_len);
     AImage_getPlaneData(image, 1, &u_data, &u_len);
     AImage_getPlaneData(image, 2, &v_data, &v_len);
-    //LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
-    AImage_delete(image);
+    LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
     //buffer.bits;
     MessageBuilder msg;
     auto framed = msg.initEvent().initRoadCameraState();
     FrameMetadata meta_data = {};
     meta_data.frame_id = frame_id;
     meta_data.timestamp_sof = nanos_since_boot();
-    s->buf.send_yuv(y_data, y_len, u_data, u_len, v_data, v_len, frame_id, meta_data);
+    s->buf.send_yuv(image, frame_id, meta_data);
     fill_frame_data(framed, meta_data);
     framed.setImage(kj::arrayPtr((const uint8_t *)s->buf.cur_yuv_buf->addr, s->buf.cur_yuv_buf->len));
     framed.setTransform(s->buf.yuv_transform.v);
     mcs->pm->send("roadCameraState", msg);
+    AImage_delete(image);
 
     // TODO: publish_thumbnail
     ++frame_id;
