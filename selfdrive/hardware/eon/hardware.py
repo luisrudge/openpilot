@@ -20,6 +20,7 @@ NetworkType = log.DeviceState.NetworkType
 NetworkStrength = log.DeviceState.NetworkStrength
 
 MODEM_PATH = "/dev/smd11"
+android_version = subprocess.check_output(["getprop", "ro.build.version.release"], encoding='utf8').rstrip()
 
 def service_call(call: List[str]) -> Union[bytes, None]:
   try:
@@ -383,6 +384,10 @@ class Android(HardwareBase):
 
   def get_thermal_config(self):
     # the thermal sensors on the 820 don't have meaningful names
+    if android_version == '9':
+      return ThermalConfig(cpu=((5, 7, 10, 12), 10), gpu=((16,), 10), mem=(2, 10),
+                         bat=("battery", 1000), ambient=("pa-therm-adc", 1), pmic=(("pm8998_tz",), 1000))
+
     return ThermalConfig(cpu=((5, 7, 10, 12), 10), gpu=((16,), 10), mem=(2, 10),
                          bat=("battery", 1000), ambient=("pa_therm0", 1), pmic=(("pm8994_tz",), 1000))
 
