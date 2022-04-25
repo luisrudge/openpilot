@@ -34,14 +34,23 @@ const char frame_fragment_shader[] =
   "precision mediump float;\n"
 #endif
   "uniform sampler2D uTextureY;\n"
+#ifdef ANDROID_9
+  "uniform sampler2D uTextureUV;\n"
+#else
   "uniform sampler2D uTextureU;\n"
   "uniform sampler2D uTextureV;\n"
+#endif
   "in vec2 vTexCoord;\n"
   "out vec4 colorOut;\n"
   "void main() {\n"
   "  float y = texture(uTextureY, vTexCoord).r;\n"
+#ifdef ANDROID_9
+  "  float u = texture(uTextureUV, vTexCoord).r - 0.5;\n"
+  "  float v = texture(uTextureUV, vTexCoord).g - 0.5;\n"
+#else
   "  float u = texture(uTextureU, vTexCoord).r - 0.5;\n"
   "  float v = texture(uTextureV, vTexCoord).r - 0.5;\n"
+#endif
   "  float r = y + 1.402 * v;\n"
   "  float g = y - 0.344 * u - 0.714 * v;\n"
   "  float b = y + 1.772 * u;\n"
@@ -158,11 +167,19 @@ void CameraViewWidget::initializeGL() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
+#ifdef ANDROID_9
+  glGenTextures(2, textures);
+#else
   glGenTextures(3, textures);
+#endif
   glUseProgram(program->programId());
   glUniform1i(program->uniformLocation("uTextureY"), 0);
+#ifdef ANDROID_9
+  glUniform1i(program->uniformLocation("uTextureUV"), 1);
+#else
   glUniform1i(program->uniformLocation("uTextureU"), 1);
   glUniform1i(program->uniformLocation("uTextureV"), 2);
+#endif
 }
 
 void CameraViewWidget::showEvent(QShowEvent *event) {
@@ -230,6 +247,21 @@ void CameraViewWidget::paintGL() {
   glBindVertexArray(frame_vao);
 
   glUseProgram(program->programId());
+#ifdef ANDROID_9
+  uint8_t *address[2] = {latest_frame->y, latest_frame->u};
+  for (int i = 0; i < 2; ++i) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, textures[i]);
+    int width = i == 0 ? stream_width : stream_width / 2;
+    int height = i == 0 ? stream_height : stream_height / 2;
+    if(i == 0)
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, address[i]);
+    else
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RG, GL_UNSIGNED_BYTE, address[i]);
+    LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
+    assert(glGetError() == GL_NO_ERROR);
+  }
+#else
   uint8_t *address[3] = {latest_frame->y, latest_frame->u, latest_frame->v};
   for (int i = 0; i < 3; ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
@@ -239,6 +271,7 @@ void CameraViewWidget::paintGL() {
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, address[i]);
     assert(glGetError() == GL_NO_ERROR);
   }
+#endif
 
   glActiveTexture(GL_TEXTURE0);  // qt requires active texture 0
 
@@ -257,6 +290,23 @@ void CameraViewWidget::vipcConnected(VisionIpcClient *vipc_client) {
   stream_height = vipc_client->buffers[0].height;
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+#ifdef ANDROID_9
+  for (int i = 0; i < 2; ++i) {
+    glBindTexture(GL_TEXTURE_2D, textures[i]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    int width = i == 0 ? stream_width : stream_width / 2;
+    int height = i == 0 ? stream_height : stream_height / 2;
+    if(i == 0)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, nullptr);
+    else
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, nullptr);
+    LOGE("%s %d gl error %d\n", __FUNCTION__, i, glGetError());
+    assert(glGetError() == GL_NO_ERROR);
+  }
+#else
   for (int i = 0; i < 3; ++i) {
     glBindTexture(GL_TEXTURE_2D, textures[i]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -268,6 +318,7 @@ void CameraViewWidget::vipcConnected(VisionIpcClient *vipc_client) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, nullptr);
     assert(glGetError() == GL_NO_ERROR);
   }
+#endif
 
   updateFrameMat(width(), height());
 }
