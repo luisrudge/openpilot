@@ -101,7 +101,7 @@ void run_camera(CameraState *s, MultiCameraState *mcs) {
     AImage_getPlaneData(image, 0, &y_data, &y_len);
     AImage_getPlaneData(image, 1, &u_data, &u_len);
     AImage_getPlaneData(image, 2, &v_data, &v_len);
-    LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
+    //LOGD("Image len: y %d, u %d, v %d", y_len, u_len, v_len);
     //buffer.bits;
     MessageBuilder msg;
     auto framed = msg.initEvent().initRoadCameraState();
@@ -114,7 +114,6 @@ void run_camera(CameraState *s, MultiCameraState *mcs) {
     framed.setTransform(s->buf.yuv_transform.v);
     mcs->pm->send("roadCameraState", msg);
     AImage_delete(image);
-
     // TODO: publish_thumbnail
     ++frame_id;
   }

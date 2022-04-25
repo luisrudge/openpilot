@@ -269,14 +269,21 @@ void CameraBuf::send_yuv(AImage *image, uint32_t frame_id, const FrameMetadata& 
   AImage_getPlanePixelStride(image, 1, &uvPixelStride);
   int32_t height = std::min(rgb_height, (srcRect.bottom - srcRect.top));
   //int32_t width = std::min(rgb_width, (srcRect.right - srcRect.left));
+//  LOGD("w1: %d w2: %d, h1: %d, h2: %d, yStride: %d, uvStride: %d, yPixel %p, yLen: %d, cur_yuv_buf: %p",
+//    rgb_width, (srcRect.right - srcRect.left), rgb_height, (srcRect.bottom - srcRect.top), yStride, uvStride, yPixel, yLen, cur_yuv_buf);
+  uint8_t *dest = (uint8_t *)cur_yuv_buf->addr;
   for (int32_t y = 0; y < height; y++) {
     const uint8_t *pY = yPixel + yStride * (y + srcRect.top) + srcRect.left;
     int32_t uv_row_start = uvStride * ((y + srcRect.top) >> 1);
     const uint8_t *pU = uPixel + uv_row_start + (srcRect.left >> 1);
     const uint8_t *pV = vPixel + uv_row_start + (srcRect.left >> 1);
-    CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, y * rgb_width, pY, 0, NULL, NULL));
-    CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, rgb_height * rgb_width / 2 + y * rgb_width / 2, pU, 0, NULL, NULL));
-    CL_CHECK(clEnqueueWriteBuffer(q, cur_yuv_buf->buf_cl, CL_TRUE, 0, rgb_height * rgb_width *3 / 2 + y * rgb_width / 2, pV, 0, NULL, NULL));
+    //LOGD("Copy y from %d to %d", yStride * (y + srcRect.top) + srcRect.left, y * rgb_width);
+    memcpy(dest + y * rgb_width, pY, rgb_width);
+    memcpy(dest + rgb_height * rgb_width / 2 + y * rgb_width / 2, pU, rgb_width / 2);
+    memcpy(dest + rgb_height * rgb_width *3 / 2 + y * rgb_width / 2, pV, rgb_width / 2);
+//    CL_CHECK(clEnqueueWriteBuffer(cur_yuv_buf->copy_q, cur_yuv_buf->buf_cl, CL_TRUE, y * rgb_width, rgb_width, pY, 0, NULL, NULL));
+//    CL_CHECK(clEnqueueWriteBuffer(cur_yuv_buf->copy_q, cur_yuv_buf->buf_cl, CL_TRUE, rgb_height * rgb_width / 2 + y * rgb_width / 2, rgb_width / 2, pU, 0, NULL, NULL));
+//    CL_CHECK(clEnqueueWriteBuffer(cur_yuv_buf->copy_q, cur_yuv_buf->buf_cl, CL_TRUE, rgb_height * rgb_width *3 / 2 + y * rgb_width / 2, rgb_width / 2, pV, 0, NULL, NULL));
   }
 
   cur_yuv_buf->set_frame_id(frame_id);
@@ -286,7 +293,7 @@ void CameraBuf::send_yuv(AImage *image, uint32_t frame_id, const FrameMetadata& 
                         meta_data.timestamp_eof,
   };
 
-  vipc_server->send(cur_yuv_buf, &extra);
+  vipc_server->send(cur_yuv_buf, &extra, true);
 
 }
 #endif
