@@ -84,7 +84,7 @@ void run_camera(CameraState *s, MultiCameraState *mcs) {
     }
     frame_cnt++;
     if(frame_cnt % 100 == 0) {
-      LOGD("%.1f fps", 100.0 / (1e-9 * nanos_since_boot() - t));
+      //LOGD("%.1f fps", 100.0 / (1e-9 * nanos_since_boot() - t));
       t = 1e-9 * nanos_since_boot();
       frame_cnt = 0;
     }
