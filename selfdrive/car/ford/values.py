@@ -22,6 +22,8 @@ class CarControllerParams:
   STEER_RATE_LIMIT_UP = AngleRateLimit(speed_points=[0., 5., 15.], max_angle_diff_points=[5., .8, .15])
   STEER_RATE_LIMIT_DOWN = AngleRateLimit(speed_points=[0., 5., 15.], max_angle_diff_points=[5., 3.5, 0.4])
 
+  STEER_ANGLE_MAX = 43.
+
 
 class CANBUS:
   main = 0

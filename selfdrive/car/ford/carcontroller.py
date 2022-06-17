@@ -1,3 +1,4 @@
+import math
 from cereal import car
 from common.numpy_fast import clip, interp
 from selfdrive.car.ford import fordcan
@@ -13,6 +14,9 @@ def apply_ford_steer_angle_limits(apply_steer, apply_steer_last, vEgo):
   rate_limit = CarControllerParams.STEER_RATE_LIMIT_UP if steer_up else CarControllerParams.STEER_RATE_LIMIT_DOWN
   max_angle_diff = interp(vEgo, rate_limit.speed_points, rate_limit.max_angle_diff_points)
   apply_steer = clip(apply_steer, (apply_steer_last - max_angle_diff), (apply_steer_last + max_angle_diff))
+
+  # absolute limit
+  apply_steer = clip(apply_steer, -CarControllerParams.STEER_ANGLE_MAX, CarControllerParams.STEER_ANGLE_MAX)
 
   return apply_steer
 
@@ -42,6 +46,9 @@ class CarController():
       # cancel stock ACC
       can_sends.append(fordcan.spam_cancel_button(self.packer))
 
+
+    ### lateral control ###
+
     # apply rate limits
     new_steer = actuators.steeringAngleDeg
     apply_steer = apply_ford_steer_angle_limits(new_steer, self.apply_steer_last, CS.out.vEgo)
@@ -51,25 +58,19 @@ class CarController():
     if (frame % CarControllerParams.LKAS_STEER_STEP) == 0:
       lca_rq = 1 if CC.latActive else 0
 
-      # use LatCtlPath_An_Actl to actuate steering for now until curvature control is implemented
-      path_angle = apply_steer
+      # calculate path angle
+      path_angle = math.radians((apply_steer - 0.769) / 2.24245138284)
 
-      # convert steer angle to curvature
-      curvature = self.VM.calc_curvature(apply_steer, CS.out.vEgo, 0.0)
-
-      # TODO: get other actuators
-      curvature_rate = 0
-      path_offset = 0
-
-      ramp_type = 3  # 0=Slow, 1=Medium, 2=Fast, 3=Immediately
+      ramp_type = 2  # 0=Slow, 1=Medium, 2=Fast, 3=Immediately
       precision = 0  # 0=Comfortable, 1=Precise
 
       self.apply_steer_last = apply_steer
-      can_sends.append(fordcan.create_lkas_command(self.packer, apply_steer, curvature))
+      can_sends.append(fordcan.create_lkas_command(self.packer, apply_steer, 0))
       can_sends.append(fordcan.create_tja_command(self.packer, lca_rq, ramp_type, precision,
-                                                  path_offset, path_angle, curvature_rate, curvature))
+                                                  0, path_angle, 0, 0))
 
 
+    ### ui ###
     send_ui = (self.main_on_last != main_on) or (self.lkas_enabled_last != CC.latActive) or (self.steer_alert_last != steer_alert)
 
     # send lkas ui command at 1Hz or if ui state changes
