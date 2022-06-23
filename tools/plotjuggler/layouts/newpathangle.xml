@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+ <tabbed_widget name="Main Window" parent="main_window">
+  <Tab containers="1" tab_name="tab1">
+   <Container>
+    <DockSplitter count="4" orientation="-" sizes="0.250401;0.249599;0.250401;0.249599">
+     <DockArea name="...">
+      <plot style="Lines" flip_y="false" flip_x="false" mode="TimeSeries">
+       <range right="325.046771" bottom="-0.025000" top="1.025000" left="317.343860"/>
+       <limitY/>
+       <curve color="#1f77b4" name="/controlsState/lateralControlState/curvatureState/active"/>
+       <curve color="#d62728" name="/carState/steeringPressed"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" flip_y="false" flip_x="false" mode="TimeSeries">
+       <range right="325.046771" bottom="-0.840000" top="13.440000" left="317.343860"/>
+       <limitY/>
+       <curve color="#1ac938" name="/carState/steeringAngleDeg"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" flip_y="false" flip_x="false" mode="TimeSeries">
+       <range right="325.046771" bottom="13.140144" top="13.731211" left="317.343860"/>
+       <limitY/>
+       <curve color="#ff7f0e" name="/carState/vEgo"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" flip_y="false" flip_x="false" mode="TimeSeries">
+       <range right="325.046771" bottom="-0.004125" top="0.000861" left="317.343860"/>
+       <limitY/>
+       <curve color="#9467bd" name="path angle"/>
+       <curve color="#f14cc1" name="/controlsState/desiredCurvature"/>
+       <curve color="#17becf" name="new path angle"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="0"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad Rlog"/>
+  <plugin ID="Cereal Subscriber"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles>
+  <fileInfo filename="../tmp0e871rmr.rlog" prefix="">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad Rlog"/>
+  </fileInfo>
+ </previouslyLoaded_Datafiles>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations>
+  <snippet name="new path angle">
+   <global></global>
+   <function>a = value
+x = math.cos(a) - 1
+y = math.sin(a)
+return math.atan(x / y)</function>
+   <linked_source>/controlsState/lateralControlState/curvatureState/desiredCurvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="path angle">
+   <global></global>
+   <function>return (value * v1)/20</function>
+   <linked_source>/controlsState/desiredCurvature</linked_source>
+   <additional_sources>
+    <v1>/carState/vEgo</v1>
+   </additional_sources>
+  </snippet>
+ </customMathEquations>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+
