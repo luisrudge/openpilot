@@ -14,6 +14,7 @@ from tools.replay.lib.ui_helpers import (_BB_TO_FULL_FRAME, UP,
                                          _INTRINSICS, BLACK, GREEN,
                                          YELLOW, Calibration,
                                          get_blank_lid_overlay, init_plots,
+                                         draw_radar_points,
                                          maybe_update_radar_points, plot_lead,
                                          plot_model,
                                          pygame_modules_have_loaded)
@@ -162,6 +163,7 @@ def ui_thread(addr):
 
     # draw all radar points
     maybe_update_radar_points(sm['liveTracks'], top_down[1])
+    draw_radar_points(sm['liveTracks'], img, calibration)
 
     if sm.updated['liveCalibration'] and num_px:
       rpyCalib = np.asarray(sm['liveCalibration'].rpyCalib)

@@ -1,4 +1,5 @@
 import itertools
+import math
 from typing import Any, Dict, Tuple
 
 import matplotlib.pyplot as plt
@@ -228,20 +229,64 @@ def plot_lead(rs, top_down):
     px_right, _ = to_topdown_pt(x, 10)
     top_down[1][px_left:px_right, py] = find_color(top_down[0], RED)
 
+def hsv_to_rgb(h, s, v):
+  if s == 0.0: v*=255; return (v, v, v)
+  i = int(h*6.) # XXX assume int() truncates!
+  f = (h*6.)-i; p,q,t = int(255*(v*(1.-s))), int(255*(v*(1.-s*f))), int(255*(v*(1.-s*(1.-f)))); v*=255; i%=6
+  if i == 0: return (v, t, p)
+  if i == 1: return (q, v, p)
+  if i == 2: return (p, v, t)
+  if i == 3: return (p, q, v)
+  if i == 4: return (t, p, v)
+  if i == 5: return (v, p, q)
+
+def draw_radar_points(lt, img, calibration):
+  if calibration is None:
+    return
+
+  ar_pts = {}
+  if lt is not None:
+    for track in lt:
+      ar_pts[track.trackId] = [track.dRel, track.yRel, track.vRel, track.aRel, track.amplitude]
+
+  for ids, pt in ar_pts.items():
+    px, py = pt[0], -pt[1]
+    amplitude = pt[-1]
+
+    if px != -1 and 0 <= amplitude <= 15:
+      x, y, z = np.asarray(px), np.asarray(py), np.asarray(0) + 1.0
+      pts = calibration.car_space_to_bb(x, y, z)
+      pts = np.round(pts).astype(int)
+
+      height, width = img.shape[:2]
+      for x, y in pts:
+        if 1 < x < width - 1 and 1 < y < height - 1:
+          # amplitude_pct = (amplitude + 64.) / 128.
+          # low_hue = 0.30
+          # high_hue = 0.70
+          # hue = low_hue + (high_hue - low_hue) * amplitude_pct
+          # color = hsv_to_rgb(hue, 1., 1.)
+
+          size = 1 # int(max(1, math.floor(20. - math.log(math.pow(pt[0] + 1., 5)))))
+          for a in range(-size, size):
+            for b in range(-size, size):
+              if 0 < x + a < width and 0 < y + b < height:
+                # img[y + b, x + a] = color
+                img[y + b, x + a] = 240
 
 def maybe_update_radar_points(lt, lid_overlay):
   ar_pts = []
   if lt is not None:
     ar_pts = {}
     for track in lt:
-      ar_pts[track.trackId] = [track.dRel, track.yRel, track.vRel, track.aRel, track.oncoming, track.stationary]
+      ar_pts[track.trackId] = [track.dRel, track.yRel, track.vRel, track.aRel, track.oncoming, track.stationary, track.amplitude]
   for ids, pt in ar_pts.items():
     # negative here since radar is left positive
     px, py = to_topdown_pt(pt[0], -pt[1])
-    if px != -1:
-      if pt[-1]:
+    if px != -1 and pt[-1] > 0:
+      if pt[-2]:
         color = 240
-      elif pt[-2]:
+      elif pt[-3]:
         color = 230
       else:
         color = 255
