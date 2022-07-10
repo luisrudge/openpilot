@@ -54,80 +54,82 @@ def read_csv_to_can(csv_file: str) -> List[CANFrame]:
   return can_frames
 
 
-def write_isotp_to_csv(isotp_packets: List[ISOTPPacket], csv_file: str) -> None:
-  with open(csv_file, 'w') as f:
-    f.write("address,dat\n")
-    for isotp_packet in isotp_packets:
-      f.write(f"{isotp_packet.address:#04x},{isotp_packet.data.hex()}\n")
+# def write_isotp_to_csv(isotp_packets: List[ISOTPPacket], csv_file: str) -> None:
+#   with open(csv_file, 'w') as f:
+#     f.write("address,dat\n")
+#     for isotp_packet in isotp_packets:
+#       f.write(f"{isotp_packet.address:#04x},{isotp_packet.data.hex()}\n")
 
 
-def read_csv_to_isotp(csv_file: str) -> List[ISOTPPacket]:
-  isotp_packets: List[ISOTPPacket] = []
-  with open(csv_file, 'r') as f:
-    header = True
-    for line in f:
-      if header:
-        header = False
-        continue
-      # 0x000,\x00\x00\x00\x00\x00\x00\x00\x00
-      address, dat = line.split(',')
-      isotp_packets.append(ISOTPPacket(address=int(address, 16), data=bytes.fromhex(dat)))
-  return isotp_packets
+# def read_csv_to_isotp(csv_file: str) -> List[ISOTPPacket]:
+#   isotp_packets: List[ISOTPPacket] = []
+#   with open(csv_file, 'r') as f:
+#     header = True
+#     for line in f:
+#       if header:
+#         header = False
+#         continue
+#       # 0x000,\x00\x00\x00\x00\x00\x00\x00\x00
+#       address, dat = line.split(',')
+#       isotp_packets.append(ISOTPPacket(address=int(address, 16), data=bytes.fromhex(dat)))
+#   return isotp_packets
 
 
 if __name__ == "__main__":
   ECU_ADDR = 0x730
   RX_OFFSET = 0x8
 
-  DEFAULT_ROUTE = "86d00e12925f4df7|2022-06-25--12-10-57"
-  # DEFAULT_ROUTE = "86d00e12925f4df7|2022-06-25--12-18-27"
-  # DEFAULT_ROUTE = "86d00e12925f4df7|2022-06-25--12-29-00"
-  name = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_ROUTE
-  route = Route(name)
+  ROUTES = [
+    "86d00e12925f4df7|2022-06-25--12-10-57",
+    "86d00e12925f4df7|2022-06-25--12-18-27",
+    "86d00e12925f4df7|2022-06-25--12-29-00",
+  ]
 
   CACHE_LOGS = False
-  CACHE_CAN = False
   FILTER_CAN_ECU = True
-  CACHE_ISOTP = False
+  # CACHE_ISOTP = False
 
-  # Load CAN frames for the route from file
-  if Path(f"{name}-all.csv").is_file() and CACHE_LOGS:
-    st = time.monotonic()
-    can_frames = read_csv_to_can(f"{name}-all.csv")
-    print(f"Loaded {len(can_frames)} CAN frames in {time.monotonic() - st:.2f}s")
+  can_frames: List[CANFrame] = []
+  st = time.monotonic()
+  for name in ROUTES:
+    print(f"Loading route {name}")
 
-  # Download and process route logs
-  else:
-    st = time.monotonic()
-    msgs = []
-    with multiprocessing.Pool(24) as pool:
-      for d in pool.map(load_segment, route.log_paths()):
-        msgs += d
-    et = time.monotonic()
-    print(f"Loaded {len(msgs)} messages in {et - st:.2f}s")
+    # Load CAN frames for the route from file
+    if Path(f"{name}-all.csv").is_file() and CACHE_LOGS:
+      route_can_frames = read_csv_to_can(f"{name}-all.csv")
+      can_frames += route_can_frames
 
-    # Parse CAN data
-    st = time.monotonic()
-    can_frames: List[CANFrame] = []
-    for m in msgs:
-      if m.which() == 'can':
-        for can in m.can:
-          src = int(can.src)
-          address = int(can.address)
-          if address in (ECU_ADDR, ECU_ADDR + RX_OFFSET):
-            print(f"{src}:{address:#04x}")
+    # Download and process route logs
+    else:
+      with multiprocessing.Pool(24) as pool:
+        paths = Route(name).log_paths()
+        if None in paths:
+          print(f"Error loading route {name} - missing logs")
+          continue
 
-          # We only care about messages on the OBD port bus
-          if src != 1:
-            continue
+        msgs = []
+        for d in pool.map(load_segment, paths):
+          msgs += d
 
-          can_frames.append(CANFrame(can))
-    et = time.monotonic()
-    print(f"Parsed {len(can_frames)} CAN packets in {et - st:.2f}s")
+        # Parse CAN data
+        route_can_frames: List[CANFrame] = []
+        for m in msgs:
+          if m.which() == 'can':
+            for can in m.can:
+              src = int(can.src)
+              address = int(can.address)
+              if address in (ECU_ADDR, ECU_ADDR + RX_OFFSET):
+                print(f"{src}:{address:#04x}")
 
-    # Write to CSV file
-    write_can_to_csv(can_frames, f"{name}-all.csv")
+              # We only care about messages on the OBD port bus
+              if src != 1:
+                continue
 
+              route_can_frames.append(CANFrame(can))
+
+        # Write to CSV file
+        write_can_to_csv(can_frames, f"{name}-all.csv")
+        can_frames += route_can_frames
 
   # Filter out messages from other ECUs
   if FILTER_CAN_ECU:
@@ -135,91 +137,90 @@ if __name__ == "__main__":
 
 
   # Load ISOTP packets from file
-  if Path(f"{name}-isotp.csv").is_file() and CACHE_ISOTP:
-    st = time.monotonic()
-    isotp_packets = read_csv_to_isotp(f"{name}-isotp.csv")
-    et = time.monotonic()
-    print(f"Loaded {len(isotp_packets)} ISOTP packets in {et - st:.2f}s")
+  # if Path(f"{name}-isotp.csv").is_file() and CACHE_ISOTP:
+  #   st = time.monotonic()
+  #   isotp_packets = read_csv_to_isotp(f"{name}-isotp.csv")
+  #   et = time.monotonic()
+  #   print(f"Loaded {len(isotp_packets)} ISOTP packets in {et - st:.2f}s")
 
   # Build ISOTP packets
-  else:
-    isotp_packets: List[ISOTPPacket] = []
-    last_isotp_frame: Optional[ISOTPFrame] = None
-    building = {}
-    DEBUG = True
+  isotp_packets: List[ISOTPPacket] = []
+  last_isotp_frame: Optional[ISOTPFrame] = None
+  building = {}
+  DEBUG = True
 
-    for can_frame in can_frames:
+  for can_frame in can_frames:
+    try:
+      isotp_frame = parse_isotp_frame(can_frame.data)
+    except:
+      continue
+
+    # Skip flow control frames
+    if isotp_frame.type == FrameType.FLOW_CONTROL:
+      continue
+
+    # Skip duplicate frames
+    if last_isotp_frame is not None and last_isotp_frame == isotp_frame:
+      continue
+
+    address = can_frame.address
+    if DEBUG: print(f"Processing {address:#04x} {isotp_frame}")
+
+    # Find existing packet being built for this address
+    isotp_packet: Optional[ISOTPPacket] = building.get(address, None)
+
+    # If no packet is being built, start a new one
+    if isotp_packet is None:
       try:
-        isotp_frame = parse_isotp_frame(can_frame.data)
-      except:
-        continue
+        isotp_packet = ISOTPPacket(address, isotp_frame)
+        building[address] = isotp_packet
+        if DEBUG: print(f"Starting new packet for {address:#04x}")
+      except Exception as e:
+        print(f"Error creating ISOTPPacket from {isotp_frame}: {e}")
 
-      # Skip flow control frames
-      if isotp_frame.type == FrameType.FLOW_CONTROL:
-        continue
+    # Otherwise, add the frame to the existing packet
+    else:
+      assert not isotp_packet.complete, "Packet already complete"
+      assert isotp_packet._frames[0].type == FrameType.FIRST
 
-      # Skip duplicate frames
-      if last_isotp_frame is not None and last_isotp_frame == isotp_frame:
-        continue
+      # Try adding the frame to the existing packet...
+      # We do this even if it's a first/single frame because the ISOTPPacket
+      # may resolve the problem itself, for example by discarding it if it is
+      # a duplicate.
+      try:
+        if DEBUG: print(f"Appending {isotp_frame.type.name} frame to packet on {address:#04x}")
+        isotp_packet.append(isotp_frame)
+      except Exception as e:
+        print(f"Error appending {isotp_frame} to packet: {e}")
 
-      address = can_frame.address
-      if DEBUG: print(f"Processing {address:#04x} {isotp_frame}")
+        # Attempt to resolve the error: maybe we are starting a new packet early?
+        if isotp_frame.type in (FrameType.SINGLE, FrameType.FIRST):
+          if DEBUG:
+            print(f"Oops! Got {isotp_frame.type.name} frame in middle of multi-frame packet on {address:#04x}")
+            print(f"\t{isotp_packet}")
+            for frame in isotp_packet._frames:
+              print(f"\t\t{frame}")
+            print(f"\t(Submitting packet when {isotp_packet._size - isotp_packet.length} bytes too short)")
 
-      # Find existing packet being built for this address
-      isotp_packet: Optional[ISOTPPacket] = building.get(address, None)
+          # Submit the previous unfinished packet
+          isotp_packets.append(isotp_packet)
 
-      # If no packet is being built, start a new one
-      if isotp_packet is None:
-        try:
+          # Start a new packet
           isotp_packet = ISOTPPacket(address, isotp_frame)
           building[address] = isotp_packet
           if DEBUG: print(f"Starting new packet for {address:#04x}")
-        except Exception as e:
-          print(f"Error creating ISOTPPacket from {isotp_frame}: {e}")
 
-      # Otherwise, add the frame to the existing packet
-      else:
-        assert not isotp_packet.complete, "Packet already complete"
-        assert isotp_packet._frames[0].type == FrameType.FIRST
+    # If the packet is complete, add it to the list and remove it from the current list
+    if isotp_packet is not None and isotp_packet.complete:
+      if DEBUG: print(f"Finished packet on {address:#04x}")
+      isotp_packets.append(isotp_packet)
+      building[address] = None
 
-        # Try adding the frame to the existing packet...
-        # We do this even if it's a first/single frame because the ISOTPPacket
-        # may resolve the problem itself, for example by discarding it if it is
-        # a duplicate.
-        try:
-          if DEBUG: print(f"Appending {isotp_frame.type.name} frame to packet on {address:#04x}")
-          isotp_packet.append(isotp_frame)
-        except Exception as e:
-          print(f"Error appending {isotp_frame} to packet: {e}")
+    if DEBUG: print()
+  print()
 
-          # Attempt to resolve the error: maybe we are starting a new packet early?
-          if isotp_frame.type in (FrameType.SINGLE, FrameType.FIRST):
-            if DEBUG:
-              print(f"Oops! Got {isotp_frame.type.name} frame in middle of multi-frame packet on {address:#04x}")
-              print(f"\t{isotp_packet}")
-              for frame in isotp_packet._frames:
-                print(f"\t\t{frame}")
-              print(f"\t(Submitting packet when {isotp_packet._size - isotp_packet.length} bytes too short)")
-
-            # Submit the previous unfinished packet
-            isotp_packets.append(isotp_packet)
-
-            # Start a new packet
-            isotp_packet = ISOTPPacket(address, isotp_frame)
-            building[address] = isotp_packet
-            if DEBUG: print(f"Starting new packet for {address:#04x}")
-
-      # If the packet is complete, add it to the list and remove it from the current list
-      if isotp_packet is not None and isotp_packet.complete:
-        if DEBUG: print(f"Finished packet on {address:#04x}")
-        isotp_packets.append(isotp_packet)
-        building[address] = None
-
-      if DEBUG: print()
-    print()
-
-    # Write to CSV file
-    write_isotp_to_csv(isotp_packets, f"{name}-isotp.csv")
+  # Write to CSV file
+  # write_isotp_to_csv(isotp_packets, f"{name}-isotp.csv")
 
 
   # Parse UDS packets
