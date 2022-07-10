@@ -14,7 +14,7 @@ from tools.lib.route import Route
 
 from selfdrive.debug.can import CANFrame
 from selfdrive.debug.isotp import FrameType, ISOTPPacket, ISOTPFrame, parse_isotp_frame
-from selfdrive.debug.uds import UDSPacket, parse_uds_packet
+from selfdrive.debug.uds import UDSPacket, parse_uds_packet, SecurityAccessService
 
 
 def hexify(data: bytes) -> str:
@@ -76,6 +76,7 @@ def read_csv_to_can(csv_file: str) -> List[CANFrame]:
 
 
 if __name__ == "__main__":
+  FILTER_CAN_ECU = True
   ECU_ADDR = 0x730
   RX_OFFSET = 0x8
 
@@ -85,8 +86,7 @@ if __name__ == "__main__":
     "86d00e12925f4df7|2022-06-25--12-29-00",
   ]
 
-  CACHE_LOGS = False
-  FILTER_CAN_ECU = True
+  CACHE_LOGS = True
   # CACHE_ISOTP = False
 
   can_frames: List[CANFrame] = []
@@ -116,24 +116,36 @@ if __name__ == "__main__":
         for m in msgs:
           if m.which() == 'can':
             for can in m.can:
-              src = int(can.src)
-              address = int(can.address)
-              if address in (ECU_ADDR, ECU_ADDR + RX_OFFSET):
-                print(f"{src}:{address:#04x}")
-
               # We only care about messages on the OBD port bus
-              if src != 1:
+              if int(can.src) != 1:
                 continue
 
               route_can_frames.append(CANFrame(can))
 
         # Write to CSV file
-        write_can_to_csv(can_frames, f"{name}-all.csv")
+        write_can_to_csv(route_can_frames, f"{name}-all.csv")
         can_frames += route_can_frames
+
+  address_count = {}
+  for can in can_frames:
+    address_count[can.address] = address_count.get(can.address, 0) + 1
+
+  # Print address counts
+  print("Address counts:")
+  for address, count in sorted(address_count.items(), key=lambda x: x[1], reverse=True):
+    print(f"{address:#04x}: {count}")
+  print()
 
   # Filter out messages from other ECUs
   if FILTER_CAN_ECU:
-    can_frames = [c for c in can_frames if c.address in (0x730, 0x738)]
+    can_frames = [c for c in can_frames if c.address >= 0x700 and c.address <= 0x7ff]
+    print(f"Filtering CAN messages: {len(can_frames)} CAN messages")
+
+    print("New address counts:")
+    address_count = {}
+    for can in can_frames:
+      address_count[can.address] = address_count.get(can.address, 0) + 1
+    print()
 
 
   # Load ISOTP packets from file
@@ -223,6 +235,8 @@ if __name__ == "__main__":
   # write_isotp_to_csv(isotp_packets, f"{name}-isotp.csv")
 
 
+  import traceback
+
   # Parse UDS packets
   uds_packets: List[UDSPacket] = []
   for isotp_packet in isotp_packets:
@@ -231,17 +245,20 @@ if __name__ == "__main__":
 
     # TODO: filter addresses, we only care about some ECUs
     is_rx = isotp_packet.address & RX_OFFSET == RX_OFFSET
-    uds_packet: Optional[UDSPacket] = None
+    uds_packet: Optional = None
     try:
       uds_packet = parse_uds_packet(isotp_packet.data)
-    except:
-      pass
+    except Exception as e:
+      print(f"Error parsing UDS packet: {e}")
+      traceback.print_exc()
 
+    data = hexify(isotp_packet.data)
+
+    print(f"{isotp_packet.address:#04x} {'RX' if is_rx else 'TX'} {data}")
     if uds_packet is not None:
       uds_packets.append(uds_packet)
-      print(f"{isotp_packet.address:#04x} {'RX' if is_rx else 'TX'} {hexify(isotp_packet.data)} -> {uds_packet}")
-    else:
-      # print(f"{isotp_packet.address:#04x} {'RX' if is_rx else 'TX'} {hexify(isotp_packet.data)}")
-      pass
+
+      print(f"\t{uds_packet}")
+      print()
 
   print()
