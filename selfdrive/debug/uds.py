@@ -26,7 +26,7 @@ def snake_to_camel(s: str) -> str:
 class UDSPacket():
   def __init__(self, data: bytes) -> None:
     assert len(data) >= 1
-    self._data = data
+    self.data = data[1:]
     self.service_identifier = data[0]
 
   @property
@@ -50,10 +50,13 @@ class UDSPacket():
 
   def _build_str(self, props: dict = dict()) -> str:  # pylint: disable=dangerous-default-value
     props_str = self._dict_to_str(props)
-    return f"{self.name}{'.Response' if self.is_response else '.Request'}({props_str})"
+    return f"{self.name}{'.PositiveResponse' if self.is_response else '.Request'}({props_str})"
 
   def __str__(self) -> str:
     return self._build_str()
+
+  def __eq__(self, __o: object) -> bool:
+    return isinstance(__o, UDSPacket) and self.service_identifier == __o.service_identifier and self.data == __o.data
 
 
 class UDSService:
@@ -84,7 +87,7 @@ class DiagnosticSessionControlService(UDSService):
 
     @property
     def session_id(self) -> int:
-      return self._data[1]
+      return self.data[0]
 
     @property
     def session_type(self) -> Optional[SESSION_TYPE]:
@@ -101,7 +104,7 @@ class DiagnosticSessionControlService(UDSService):
 
     @property
     def session_id_echo(self) -> int:
-      return self._data[1]
+      return self.data[0]
 
     @property
     def session_type_echo(self) -> Optional[SESSION_TYPE]:
@@ -134,7 +137,7 @@ class ECUResetService(UDSService):
 
     @property
     def reset_id(self) -> int:
-      return self._data[1]
+      return self.data[0]
 
     @property
     def reset_type(self) -> Optional[RESET_TYPE]:
@@ -151,7 +154,7 @@ class ECUResetService(UDSService):
 
     @property
     def reset_id_echo(self) -> int:
-      return self._data[1]
+      return self.data[0]
 
     @property
     def reset_type_echo(self) -> Optional[RESET_TYPE]:
@@ -166,49 +169,76 @@ class ECUResetService(UDSService):
 class SecurityAccessService(UDSService):
   """
   SECURITY_ACCESS (0x27)
+
+  Parameters:
+    Level:
+
   """
 
   class Request(UDSPacket):
     def __init__(self, data: bytes):
-      assert len(data) >= 2
       super().__init__(data)
 
     @property
     def level(self) -> int:
-      return self._data[1]
+      return self.data[0]
 
     @property
     def access_type(self) -> ACCESS_TYPE:
-      return ACCESS_TYPE.REQUEST_SEED if self.level % 2 == 1 else ACCESS_TYPE.SEND_KEY
+      return ACCESS_TYPE.SEND_KEY if self.level % 2 == 0 else ACCESS_TYPE.REQUEST_SEED
+
+    @property
+    def security_data(self) -> bytes:
+      if self.access_type == ACCESS_TYPE.SEND_KEY:
+        # Security key is required for send key
+        return self.data[1:]
+      elif self.access_type == ACCESS_TYPE.REQUEST_SEED:
+        # Security access data record is optional for request seed
+        return self.data[1:] if len(self.data) > 1 else b""
 
     def __str__(self) -> str:
-      return self._build_str({
+      params = {
         "level": f"{self.level:#02x}",
         "mode": self.access_type.name,
-      })
+      }
+      if self.access_type == ACCESS_TYPE.SEND_KEY:
+        params["key"] = f"\"{hexify(self.security_data)}\""
+      elif self.access_type == ACCESS_TYPE.REQUEST_SEED:
+        params["record"] = f"\"{hexify(self.security_data)}\""
+      return self._build_str(params)
 
   class Response(UDSPacket):
     def __init__(self, data: bytes):
-      assert len(self._data) > 2
       super().__init__(data)
 
     @property
-    def access_id(self) -> int:
-      return self._data[1]
+    def level(self) -> int:
+      return self.data[0]
 
     @property
-    def access_type(self) -> Optional[ACCESS_TYPE]:
-      return ACCESS_TYPE(self.access_id) if self.access_id in ACCESS_TYPES else None
+    def access_type(self) -> ACCESS_TYPE:
+      return ACCESS_TYPE.SEND_KEY if self.level % 2 == 0 else ACCESS_TYPE.REQUEST_SEED
 
     @property
     def seed(self) -> bytes:
-      return self._data[2:]
+      return self.data[1:] if self.access_type == ACCESS_TYPE.REQUEST_SEED else b""
 
     def __str__(self) -> str:
-      return self._build_str({
-        "access_type": self.access_type.name if self.access_type is not None else f"{self.access_id:#02x}",
-        "seed": f"{hexify(self.seed)}",
-      })
+      params = {
+        "level": f"{self.level:#02x}",
+        "mode": self.access_type.name,
+      }
+      if self.access_type == ACCESS_TYPE.REQUEST_SEED:
+        params["seed"] = f"\"{hexify(self.seed)}\""
+      return self._build_str(params)
+
+
+def _did_to_desc(did: int) -> str:
+  return f"{DATA_IDENTIFIER_TYPE(did).name}" if did in DATA_IDENTIFIER_TYPES else f"{did:#04x}"
+
+
+def _didlist_to_desc(didlist: List[int]) -> List[str]:
+  return [_did_to_desc(did) for did in didlist]
 
 
 class ReadDataByIdentifierService(UDSService):
@@ -218,23 +248,80 @@ class ReadDataByIdentifierService(UDSService):
 
     @property
     def didlist(self) -> List[int]:
-      # TODO: implement
-      return []
+      dids = []
+      for i in range(0, len(self.data), 2):
+        if i + 1 == len(self.data):
+          break
+        dids.append((self.data[i] << 8) + (self.data[i + 1] << 0))
+      return dids
 
     def __str__(self) -> str:
       return self._build_str({
-        "didlist": f"{self.didlist}",
+        "didlist": f"{_didlist_to_desc(self.didlist)}",
       })
 
   class Response(UDSPacket):
     def __init__(self, data: bytes):
       super().__init__(data)
 
+    def __str__(self) -> str:
+      # TODO: implement for more than one value
+      value = self.data[2:]
+      return self._build_str({
+        "raw": f"{hexify(value)}",
+        "utf8": f"\"{value.decode('utf-8', errors='replace')}\"",
+      })
+
 
 class WriteDataByIdentifierService(UDSService):
   class Request(UDSPacket):
     def __init__(self, data: bytes):
       super().__init__(data)
+
+    @property
+    def did(self) -> int:
+      return (self.data[0] << 8) + (self.data[1] << 0)
+
+    @property
+    def value(self) -> bytes:
+      return self.data[2:]
+
+    def __str__(self) -> str:
+      return self._build_str({
+        "did": _did_to_desc(self.did),
+        "value": f"\"{hexify(self.value)}\"",
+      })
+
+  class Response(UDSPacket):
+    def __init__(self, data: bytes):
+      super().__init__(data)
+
+    @property
+    def did_echo(self) -> int:
+      return (self.data[0] << 8) + (self.data[1] << 0)
+
+    def __str__(self) -> str:
+      return self._build_str({
+        "did_echo": _did_to_desc(self.did_echo),
+      })
+
+
+class ClearDiagnosticInformationService(UDSService):
+  class Request(UDSPacket):
+    def __init__(self, data: bytes):
+      super().__init__(data)
+
+    @property
+    def group(self) -> int:
+      """
+      DTC mask ranging from 0 to 0xFFFFFF. 0xFFFFFF means all DTCs.
+      """
+      return self.data[0] << 16 | self.data[1] << 8 | self.data[2]
+
+    def __str__(self) -> str:
+      return self._build_str({
+        "group": f"{self.group:#06x}",
+      })
 
   class Response(UDSPacket):
     def __init__(self, data: bytes):
@@ -247,7 +334,7 @@ class NegativeResponse(UDSPacket):
 
   @property
   def negative_response_code_id(self) -> int:
-    return self._data[1]
+    return self.data[0]
 
   @property
   def negative_response_code_desc(self) -> Optional[str]:
@@ -255,10 +342,11 @@ class NegativeResponse(UDSPacket):
 
   def __str__(self) -> str:
     props = {
-      "service": self.service_type.name if self.service_type is not None else f"{self.service_identifier:#04x}",
       "code": f"\"{self.negative_response_code_desc}\"",
     }
-    return f"NegativeResponse({self._dict_to_str(props)})"
+    if self.service_type is None:
+      props["service_id"] = f"{self.service_identifier:#04x}"
+    return f"{self.name}.NegativeResponse({self._dict_to_str(props)})"
 
 
 UDS_SERVICES = {
@@ -267,6 +355,7 @@ UDS_SERVICES = {
   SERVICE_TYPE.SECURITY_ACCESS: SecurityAccessService,
   SERVICE_TYPE.READ_DATA_BY_IDENTIFIER: ReadDataByIdentifierService,
   SERVICE_TYPE.WRITE_DATA_BY_IDENTIFIER: WriteDataByIdentifierService,
+  SERVICE_TYPE.CLEAR_DIAGNOSTIC_INFORMATION: ClearDiagnosticInformationService,
 }
 
 
@@ -289,7 +378,7 @@ def parse_uds_packet(data: bytes) -> Optional[UDSPacket]:
       service_type = SERVICE_TYPE(service_identifier)
       if service_type in UDS_SERVICES:
         service = UDS_SERVICES[service_type]
-    except KeyError:
+    except ValueError:
       pass
 
     if request:

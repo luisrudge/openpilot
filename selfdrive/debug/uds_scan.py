@@ -116,14 +116,14 @@ if __name__ == "__main__":
         for m in msgs:
           if m.which() == 'can':
             for can in m.can:
-              # We only care about messages on the OBD port bus
-              if int(can.src) != 1:
-                continue
-
               route_can_frames.append(CANFrame(can))
 
         # Write to CSV file
         write_can_to_csv(route_can_frames, f"{name}-all.csv")
+
+        # We only care about messages on the OBD port bus
+        # route_can_frames = [f for f in route_can_frames if f.src == 1]
+
         can_frames += route_can_frames
 
   address_count = {}
@@ -239,12 +239,12 @@ if __name__ == "__main__":
 
   # Parse UDS packets
   uds_packets: List[UDSPacket] = []
+  last_uds_packet: UDSPacket = None
   for isotp_packet in isotp_packets:
+    # TODO: filter addresses, we only care about some ECUs
     if isotp_packet.address > 0x1000:
       continue
 
-    # TODO: filter addresses, we only care about some ECUs
-    is_rx = isotp_packet.address & RX_OFFSET == RX_OFFSET
     uds_packet: Optional = None
     try:
       uds_packet = parse_uds_packet(isotp_packet.data)
@@ -254,11 +254,13 @@ if __name__ == "__main__":
 
     data = hexify(isotp_packet.data)
 
-    print(f"{isotp_packet.address:#04x} {'RX' if is_rx else 'TX'} {data}")
+    sb = f"{isotp_packet.address:#04x} "
     if uds_packet is not None:
+      if uds_packet == last_uds_packet:
+        continue
       uds_packets.append(uds_packet)
-
-      print(f"\t{uds_packet}")
-      print()
+      sb += f" {uds_packet}"
+    print(sb)
+    last_uds_packet = uds_packet
 
   print()
