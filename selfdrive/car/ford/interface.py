@@ -20,6 +20,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerControlType = car.CarParams.SteerControlType.angle
     ret.steerActuatorDelay = 0.1
     ret.steerLimitTimer = 1.0
+    tire_stiffness_factor = 1.0  # Let the params learner figure this out
 
     # TODO: detect stop-and-go vehicles
     stop_and_go = False
@@ -27,13 +28,11 @@ class CarInterface(CarInterfaceBase):
     if candidate == CAR.ESCAPE_MK4:
       ret.wheelbase = 2.71
       ret.steerRatio = 14.3  # Copied from Focus
-      tire_stiffness_factor = 0.5328  # Copied from Focus
       ret.mass = 1750 + STD_CARGO_KG
 
     elif candidate == CAR.FOCUS_MK4:
       ret.wheelbase = 2.7
-      ret.steerRatio = 14.3
-      tire_stiffness_factor = 0.5328
+      ret.steerRatio = 13.8  # learned
       ret.mass = 1350 + STD_CARGO_KG
 
     else:
@@ -56,9 +55,8 @@ class CarInterface(CarInterfaceBase):
     # LCA can steer down to zero
     ret.minSteerSpeed = 0.
 
-    ret.centerToFront = ret.wheelbase * 0.44
-
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
+    ret.centerToFront = ret.wheelbase * 0.44
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront,
                                                                          tire_stiffness_factor=tire_stiffness_factor)
 
