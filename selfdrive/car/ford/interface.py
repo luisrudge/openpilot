@@ -19,9 +19,8 @@ class CarInterface(CarInterfaceBase):
     ret.dashcamOnly = True
 
     # Angle-based steering
-    # TODO: use curvature control when ready
     ret.steerControlType = car.CarParams.SteerControlType.angle
-    ret.steerActuatorDelay = 0.1
+    ret.steerActuatorDelay = 0.15
     ret.steerLimitTimer = 1.0
 
     # TODO: detect stop-and-go vehicles
