@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cereal import car
 from common.conversions import Conversions as CV
-from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
+from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint, get_safety_config
 from selfdrive.car.ford.values import CAR, TransmissionType, GearShifter
 from selfdrive.car.interfaces import CarInterfaceBase
 
@@ -13,10 +13,8 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None, disable_radar=False):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
-
     ret.carName = "ford"
-    #ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.ford)]
-    ret.dashcamOnly = True
+    ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.ford)]
 
     # Angle-based steering
     ret.steerControlType = car.CarParams.SteerControlType.angle
