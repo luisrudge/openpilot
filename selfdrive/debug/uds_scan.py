@@ -81,12 +81,30 @@ if __name__ == "__main__":
   RX_OFFSET = 0x8
 
   ROUTES = [
-    "86d00e12925f4df7|2022-06-25--12-10-57",
-    "86d00e12925f4df7|2022-06-25--12-18-27",
-    "86d00e12925f4df7|2022-06-25--12-29-00",
+    # "86d00e12925f4df7|2022-06-25--12-10-57",
+    # "86d00e12925f4df7|2022-06-25--12-18-27",
+    # "86d00e12925f4df7|2022-06-25--12-29-00",
+
+    # "86d00e12925f4df7|2022-07-17--22-17-04",  # first attempt, didn't work (only tester present queries)
+    # "86d00e12925f4df7|2022-07-17--22-17-40",
+    # "86d00e12925f4df7|2022-07-17--22-22-15",
+    # "86d00e12925f4df7|2022-07-17--22-24-45",
+    # "86d00e12925f4df7|2022-07-17--22-25-00",
+    # "86d00e12925f4df7|2022-07-17--22-27-06",
+    # "86d00e12925f4df7|2022-07-17--22-28-57",
+    # "86d00e12925f4df7|2022-07-17--22-30-08",  # successful fingerprint (all queries?)
+    # "86d00e12925f4df7|2022-07-17--22-31-17",
+    # "86d00e12925f4df7|2022-07-17--22-33-18",
+    # "86d00e12925f4df7|2022-07-17--22-34-11",
+    # "86d00e12925f4df7|2022-07-17--22-34-50",
+    # "86d00e12925f4df7|2022-07-17--22-35-29",
+    # "86d00e12925f4df7|2022-07-17--22-36-26",
+    # "86d00e12925f4df7|2022-07-17--22-37-09",  # last attempt, didn't work? (all queries?)
+
+    "86d00e12925f4df7|2022-07-18--20-24-15",
   ]
 
-  CACHE_LOGS = True
+  CACHE_LOGS = False
   # CACHE_ISOTP = False
 
   can_frames: List[CANFrame] = []
@@ -126,26 +144,26 @@ if __name__ == "__main__":
 
         can_frames += route_can_frames
 
-  address_count = {}
-  for can in can_frames:
-    address_count[can.address] = address_count.get(can.address, 0) + 1
-
-  # Print address counts
-  print("Address counts:")
-  for address, count in sorted(address_count.items(), key=lambda x: x[1], reverse=True):
-    print(f"{address:#04x}: {count}")
-  print()
 
   # Filter out messages from other ECUs
   if FILTER_CAN_ECU:
     can_frames = [c for c in can_frames if c.address >= 0x700 and c.address <= 0x7ff]
+    # can_frames = [c for c in can_frames if c.address in (0x7DF, 0x7E0, 0x7E8)]
     print(f"Filtering CAN messages: {len(can_frames)} CAN messages")
 
-    print("New address counts:")
-    address_count = {}
-    for can in can_frames:
-      address_count[can.address] = address_count.get(can.address, 0) + 1
-    print()
+  # Print address counts
+  address_count = {}
+  for can in can_frames:
+    address_count[can.address] = address_count.get(can.address, 0) + 1
+
+  count_map = {}
+  for address, count in address_count.items():
+    count_map[count] = count_map.get(count, []) + [f"{address:#04x}"]
+
+  print("Address counts:")
+  for count, addresses in sorted(count_map.items(), reverse=True):
+    print(f"  {count}: {sorted(addresses)}")
+  print()
 
 
   # Load ISOTP packets from file
@@ -159,11 +177,11 @@ if __name__ == "__main__":
   isotp_packets: List[ISOTPPacket] = []
   last_isotp_frame: Optional[ISOTPFrame] = None
   building = {}
-  DEBUG = True
+  DEBUG = False
 
   for can_frame in can_frames:
     try:
-      isotp_frame = parse_isotp_frame(can_frame.data)
+      isotp_frame = parse_isotp_frame(can_frame.data, src=can_frame.src)
     except:
       continue
 
@@ -247,7 +265,7 @@ if __name__ == "__main__":
 
     uds_packet: Optional = None
     try:
-      uds_packet = parse_uds_packet(isotp_packet.data)
+      uds_packet = parse_uds_packet(isotp_packet.data, isotp_packet._srcs)
     except Exception as e:
       print(f"Error parsing UDS packet: {e}")
       traceback.print_exc()

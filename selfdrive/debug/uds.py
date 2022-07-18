@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import panda.python.uds as uds
 
@@ -24,10 +24,11 @@ def snake_to_camel(s: str) -> str:
 
 
 class UDSPacket():
-  def __init__(self, data: bytes) -> None:
+  def __init__(self, data: bytes, srcs: Set[int]) -> None:
     assert len(data) >= 1
     self.data = data[1:]
     self.service_identifier = data[0]
+    self.srcs = srcs
 
   @property
   def name(self) -> str:
@@ -49,7 +50,15 @@ class UDSPacket():
     return s[:-2]
 
   def _build_str(self, props: dict = dict()) -> str:  # pylint: disable=dangerous-default-value
-    props_str = self._dict_to_str(props)
+    if self.name == "UDSPacket":
+      props = {
+        "sid": f"{self.service_identifier:#02x}",
+        "data": hexify(self.data),
+      }
+    default_props = {
+      "srcs": self.srcs,
+    }
+    props_str = self._dict_to_str({**props, **default_props})
     return f"{self.name}{'.PositiveResponse' if self.is_response else '.Request'}({props_str})"
 
   def __str__(self) -> str:
@@ -81,9 +90,9 @@ class DiagnosticSessionControlService(UDSService):
   """
 
   class Request(UDSPacket):
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes, srcs: Set[int]):
       assert len(data) == 2
-      super().__init__(data)
+      super().__init__(data, srcs)
 
     @property
     def session_id(self) -> int:
@@ -99,8 +108,8 @@ class DiagnosticSessionControlService(UDSService):
       })
 
   class Response(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def session_id_echo(self) -> int:
@@ -131,9 +140,9 @@ class ECUResetService(UDSService):
   """
 
   class Request(UDSPacket):
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes, srcs: Set[int]):
       assert len(data) == 2
-      super().__init__(data)
+      super().__init__(data, srcs)
 
     @property
     def reset_id(self) -> int:
@@ -149,8 +158,8 @@ class ECUResetService(UDSService):
       })
 
   class Response(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def reset_id_echo(self) -> int:
@@ -176,8 +185,8 @@ class SecurityAccessService(UDSService):
   """
 
   class Request(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def level(self) -> int:
@@ -208,8 +217,8 @@ class SecurityAccessService(UDSService):
       return self._build_str(params)
 
   class Response(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def level(self) -> int:
@@ -243,8 +252,8 @@ def _didlist_to_desc(didlist: List[int]) -> List[str]:
 
 class ReadDataByIdentifierService(UDSService):
   class Request(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def didlist(self) -> List[int]:
@@ -261,8 +270,8 @@ class ReadDataByIdentifierService(UDSService):
       })
 
   class Response(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     def __str__(self) -> str:
       # TODO: implement for more than one value
@@ -275,8 +284,8 @@ class ReadDataByIdentifierService(UDSService):
 
 class WriteDataByIdentifierService(UDSService):
   class Request(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def did(self) -> int:
@@ -293,8 +302,8 @@ class WriteDataByIdentifierService(UDSService):
       })
 
   class Response(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def did_echo(self) -> int:
@@ -308,8 +317,8 @@ class WriteDataByIdentifierService(UDSService):
 
 class ClearDiagnosticInformationService(UDSService):
   class Request(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
     @property
     def group(self) -> int:
@@ -324,13 +333,13 @@ class ClearDiagnosticInformationService(UDSService):
       })
 
   class Response(UDSPacket):
-    def __init__(self, data: bytes):
-      super().__init__(data)
+    def __init__(self, data: bytes, srcs: Set[int]):
+      super().__init__(data, srcs)
 
 
 class NegativeResponse(UDSPacket):
-  def __init__(self, data: bytes):
-    super().__init__(data)
+  def __init__(self, data: bytes, srcs: Set[int]):
+    super().__init__(data, srcs)
 
   @property
   def negative_response_code_id(self) -> int:
@@ -359,13 +368,13 @@ UDS_SERVICES = {
 }
 
 
-def parse_uds_packet(data: bytes) -> Optional[UDSPacket]:
+def parse_uds_packet(data: bytes, srcs: Set[int]) -> Optional[UDSPacket]:
   service_identifier = int(data[0])
 
   # Handle negative response
   if service_identifier == 0x7F:
     data = data[1:]
-    return NegativeResponse(data)
+    return NegativeResponse(data, srcs)
 
   else:
     request = True
@@ -382,6 +391,6 @@ def parse_uds_packet(data: bytes) -> Optional[UDSPacket]:
       pass
 
     if request:
-      return service.Request(data)
+      return service.Request(data, srcs)
     else:
-      return service.Response(data)
+      return service.Response(data, srcs)

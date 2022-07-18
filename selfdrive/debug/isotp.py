@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Optional
+from typing import Optional, Set
 
 
 def hexify(data: bytes) -> str:
@@ -24,6 +24,7 @@ class ISOTPFrame():
   type: FrameType
   size: int
   data: bytes
+  src: Optional[int]
 
   def __eq__(self, __o: object) -> bool:
     return isinstance(__o, ISOTPFrame) and self.type == __o.type and self.data == __o.data
@@ -31,10 +32,11 @@ class ISOTPFrame():
 
 # single message (0x00, size (0..7), data...)
 class SingleISOTPFrame(ISOTPFrame):
-  def __init__(self, dat: bytes):
+  def __init__(self, dat: bytes, src: Optional[int] = None):
     self.type = FrameType.SINGLE
     self.size = dat[0] & 0x0F
     self.data = dat[1:1 + self.size]
+    self.src = src
 
     assert self.size > 0
     assert len(self.data) == self.size
@@ -45,13 +47,11 @@ class SingleISOTPFrame(ISOTPFrame):
 
 # first message of a multi-message (0x01, size (8..4096), data...)
 class FirstISOTPFrame(ISOTPFrame):
-  def __init__(self, dat: bytes):
-    # global PACKET_REMAINING
-
+  def __init__(self, dat: bytes, src: Optional[int] = None):
     self.type = FrameType.FIRST
     self.size = (dat[0] & 0x0F) << 8 | dat[1]
     self.data = dat[2:8]
-    # PACKET_REMAINING = self.size - 6
+    self.src = src
 
     # assert len(self.data) == 6
 
@@ -61,15 +61,11 @@ class FirstISOTPFrame(ISOTPFrame):
 
 # consecutive message of a multi-message (0x02, index (0..15), data...)
 class ConsecutiveISOTPFrame(ISOTPFrame):
-  def __init__(self, dat: bytes):
-    # global PACKET_REMAINING
-
+  def __init__(self, dat: bytes, src: Optional[int] = None):
     self.type = FrameType.CONSECUTIVE
     self.index = dat[0] & 0x0F
     self.data = dat[1:]
-    # length = min(PACKET_REMAINING, 7)
-    # self.data = dat[1:length + 1]
-    # PACKET_REMAINING -= length
+    self.src = src
 
     # assert length > 0
     # assert len(self.data) == length, f"{len(self.data)} != {length}"
@@ -80,26 +76,27 @@ class ConsecutiveISOTPFrame(ISOTPFrame):
 
 # flow control message (0x03, flag (0, 1, 2), block size, separation time)
 class FlowISOTPFrame(ISOTPFrame):
-  def __init__(self, dat: bytes):
+  def __init__(self, dat: bytes, src: Optional[int] = None):
     self.type = FrameType.FLOW_CONTROL
     self.flag = dat[0] & 0x0F
     self.block_size = dat[1]
     self.separation_time = dat[2]
+    self.src = src
 
   def __str__(self) -> str:
     return f"ISOTPFrame.Flow(flag={self.flag}, block_size={self.block_size}, separation_time={self.separation_time})"
 
 
-def parse_isotp_frame(dat: bytes) -> Optional[ISOTPFrame]:
+def parse_isotp_frame(dat: bytes, src: Optional[int] = None) -> Optional[ISOTPFrame]:
   type = FrameType(dat[0] >> 4)
   if type == FrameType.SINGLE:
-    return SingleISOTPFrame(dat)
+    return SingleISOTPFrame(dat, src=src)
   elif type == FrameType.FIRST:
-    return FirstISOTPFrame(dat)
+    return FirstISOTPFrame(dat, src=src)
   elif type == FrameType.CONSECUTIVE:
-    return ConsecutiveISOTPFrame(dat)
+    return ConsecutiveISOTPFrame(dat, src=src)
   elif type == FrameType.FLOW_CONTROL:
-    return FlowISOTPFrame(dat)
+    return FlowISOTPFrame(dat, src=src)
   raise ISOTPException(f"Unknown frame type: {type}")
 
 
@@ -116,6 +113,9 @@ class ISOTPPacket():
       self._size = frame.size
       self.data = bytearray(frame.data)
       self._last_index = 0
+      self._srcs: Set[int] = set()
+      if frame.src is not None:
+        self._srcs.add(frame.src)
 
       assert frame.type == FrameType.FIRST or len(self.data) == self._size
     else:
@@ -135,6 +135,8 @@ class ISOTPPacket():
       raise ISOTPException(f"Invalid frame type: Tried to append a {frame.type.name} frame to a multi-frame packet")
 
     self._frames.append(frame)
+    if frame.src is not None:
+      self._srcs.add(frame.src)
 
     if frame.type == FrameType.FLOW_CONTROL:
       return
@@ -155,6 +157,8 @@ class ISOTPPacket():
     # TODO: trim data to desired size
     self._last_index = frame.index
     self.data.extend(frame.data)
+    if len(self.data) > self._size:
+      raise ISOTPException(f"Packet data too large (size={len(self.data)}, expected={self._size})")
 
   @property
   def length(self) -> int:
