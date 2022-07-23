@@ -33,11 +33,13 @@ class CANBUS:
 class CAR:
   ESCAPE_MK4 = "FORD ESCAPE 4TH GEN"
   FOCUS_MK4 = "FORD FOCUS 4TH GEN"
+  TRANSIT_MK4 = "FORD TRANSIT 4TH GEN"
 
 
 CAR_INFO: Dict[str, Union[CarInfo, List[CarInfo]]] = {
   CAR.ESCAPE_MK4: CarInfo("Ford Escape", "NA"),
   CAR.FOCUS_MK4: CarInfo("Ford Focus", "NA"),
+  CAR.TRANSIT_MK4: CarInfo("Ford Transit", "NA"),
 }
 
 
@@ -76,10 +78,25 @@ FW_VERSIONS = {
       b'JX6A-14C204-BPL\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
+  CAR.TRANSIT_MK4: {
+    (Ecu.eps, 0x730, None): [
+      b'KK21-14D003-AJ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.esp, 0x760, None): [
+      b'NK41-2D053-AF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdRadar, 0x764, None): [
+      b'LB5T-14D049-AB\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdCamera, 0x706, None): [
+      b'NK3T-14F397-AA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+  },
 }
 
 
 DBC = {
   CAR.ESCAPE_MK4: dbc_dict('ford_lincoln_base_pt', None),
   CAR.FOCUS_MK4: dbc_dict('ford_lincoln_base_pt', None),
+  CAR.TRANSIT_MK4: dbc_dict('ford_lincoln_base_pt', None),
 }
