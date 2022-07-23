@@ -359,7 +359,9 @@ if __name__ == "__main__":
 
     # "86d00e12925f4df7|2022-07-19--15-02-16",  # 19th July - ford-angle-experiment with revisions
 
-    "86d00e12925f4df7|2022-07-20--18-12-24",  # 20th July - manchester to home
+    # "86d00e12925f4df7|2022-07-20--18-12-24",  # 20th July - manchester to home
+
+    "86d00e12925f4df7|2022-07-21--13-05-25",  # 21st July - home to lancaster
   ]
 
   CACHE_LOGS = True
