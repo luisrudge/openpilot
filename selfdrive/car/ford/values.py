@@ -33,12 +33,14 @@ class CANBUS:
 class CAR:
   ESCAPE_MK4 = "FORD ESCAPE 4TH GEN"
   FOCUS_MK4 = "FORD FOCUS 4TH GEN"
+  MAVERICK_MK1 = "FORD MAVERICK 1ST GEN"
   TRANSIT_MK4 = "FORD TRANSIT 4TH GEN"
 
 
 CAR_INFO: Dict[str, Union[CarInfo, List[CarInfo]]] = {
   CAR.ESCAPE_MK4: CarInfo("Ford Escape", "NA"),
   CAR.FOCUS_MK4: CarInfo("Ford Focus", "NA"),
+  CAR.MAVERICK_MK1: CarInfo("Ford Maverick", "NA"),
   CAR.TRANSIT_MK4: CarInfo("Ford Transit", "NA"),
 }
 
@@ -78,6 +80,23 @@ FW_VERSIONS = {
       b'JX6A-14C204-BPL\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
   },
+  CAR.MAVERICK_MK1: {
+    (Ecu.eps, 0x730, None): [
+      b'NZ6C-14D003-AK\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.esp, 0x760, None): [
+      b'NZ6C-2D053-AF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdRadar, 0x764, None): [
+      b'NZ6T-14D049-AA\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdCamera, 0x706, None): [
+      b'NZ6T-14F397-AC\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.engine, 0x7E0, None): [
+      b'NZ6A-14C204-HD\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+  },
   CAR.TRANSIT_MK4: {
     (Ecu.eps, 0x730, None): [
       b'KK21-14D003-AJ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
@@ -98,5 +117,6 @@ FW_VERSIONS = {
 DBC = {
   CAR.ESCAPE_MK4: dbc_dict('ford_lincoln_base_pt', None),
   CAR.FOCUS_MK4: dbc_dict('ford_lincoln_base_pt', None),
+  CAR.MAVERICK_MK1: dbc_dict('ford_lincoln_base_pt', None),
   CAR.TRANSIT_MK4: dbc_dict('ford_lincoln_base_pt', None),
 }
