@@ -26,7 +26,7 @@ from tools.lib.logreader import MultiLogIterator
 def get_can_parser(CP):
   signals = [
     # sig_name, sig_address
-    ("VehRol_W_Actl", "Yaw_Data_FD1"),                    # vehicle roll angle (rad)
+    ("VehYaw_W_Actl", "Yaw_Data_FD1"),                    # vehicle yaw angle (rad)
   ]
   checks = [
     # sig_address, frequency
@@ -62,6 +62,8 @@ FEATURES = [
   'carState.steeringTorque',
   'carState.steeringPressed',
 
+  'can.Yaw_Data_FD1.VehYaw_W_Actl',
+
   # 'sendcan.LateralMotionControl.LatCtl_D_Rq',
   # 'sendcan.LateralMotionControl.LatCtlRampType_D_Rq',
   # 'sendcan.LateralMotionControl.LatCtlPrecision_D_Rq',
@@ -83,8 +85,9 @@ FEATURES = [
 
 X_labels = [
   # 'carState.vEgo',
+  # 'can.Yaw_Data_FD1.VehYaw_W_Actl',
   'sendcan.LateralMotionControl.LatCtlPath_An_Actl',
-  'vehicleModel.roll',
+  # 'vehicleModel.roll',
 ]
 Y_label = 'carState.steeringAngleDeg'
 
@@ -94,6 +97,7 @@ MIN_SEGMENT_TIME = 2 * SECONDS
 
 Record = namedtuple('Record', [
   'carState',
+  'can',
   'sendcan',
   'vehicleModel',
   'controlsState',
@@ -103,6 +107,7 @@ Record = namedtuple('Record', [
 def create_record() -> Record:
   return Record(
     carState=None,
+    can=None,
     sendcan=None,
     vehicleModel=None,
     controlsState=None,
@@ -136,6 +141,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
   def try_append():
     nonlocal record
     if record.carState is not None and \
+        record.can is not None and \
         record.sendcan is not None and \
         record.vehicleModel is not None and \
         record.controlsState is not None and \
@@ -149,6 +155,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
 
       row = dict(explode_dicts(
         carState=record.carState,
+        can=record.can,
         sendcan=record.sendcan,
         vehicleModel=record.vehicleModel,
         controlsState=record.controlsState,
@@ -169,6 +176,14 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
         'steeringTorque': carState.steeringTorque,
         'steeringPressed': carState.steeringPressed,
       })
+
+    elif msg.which() == 'can':
+      # parse can messages
+      can_string = msg.as_builder().to_bytes()
+      cp.update_string(can_string)
+
+      # update recorded can
+      record = record._replace(can = {k: v for k, v in cp.vl.items() if v and isinstance(k, str)})
 
     elif msg.which() == 'sendcan':
       # parse sent can messages
@@ -277,9 +292,10 @@ def plot(dataset: pd.DataFrame, title=None):
     #   axs[1, 1].plot(np.radians(dataset['carState.pathAngleRad']), label='carState.pathAngleRad')
     axs[1, 1].legend()
 
-  if 'vehicleModel.roll' in dataset:
+  if 'vehicleModel.roll' in dataset and 'can.Yaw_Data_FD1.VehRol_W_Actl' in dataset:
     axs[2, 1].set_title('vehicleModel.roll')
     axs[2, 1].plot(dataset['vehicleModel.roll'], label='vehicleModel.roll')
+    axs[2, 1].plot(dataset['can.Yaw_Data_FD1.VehRol_W_Actl'], label='Yaw_Data_FD1.VehRol_W_Actl')
     axs[2, 1].legend()
 
 
@@ -364,7 +380,7 @@ if __name__ == "__main__":
     "86d00e12925f4df7|2022-07-21--13-05-25",  # 21st July - home to lancaster
   ]
 
-  CACHE_LOGS = True
+  CACHE_LOGS = False
 
   all_combined = []
 
@@ -416,8 +432,8 @@ if __name__ == "__main__":
         fc.writerows(combined.to_dict('records'))
 
       for i, segment in enumerate(segments):
-        # if len(segment) > 10 * SECONDS:
-        #   plot(segment, title=f"Segment {i+1}/{len(segments)}, Length {(len(segment)/100.):.2f}s")
+        if len(segment) > 10 * SECONDS:
+          plot(segment, title=f"Segment {i+1}/{len(segments)}, Length {(len(segment)/100.):.2f}s")
 
         with open(f"{r.name.time_str}--{i}.csv", 'w', encoding='utf8', newline='') as f:
           fc = csv.DictWriter(f, fieldnames=segment.columns)
@@ -494,9 +510,9 @@ if __name__ == "__main__":
   print(f"R2: {model.score(all_combined[X_labels], all_combined[Y_label])}")
 
   # plot
-  plt.plot(all_combined[X_labels], all_combined[Y_label], 'o', label='data')
-  plt.plot(all_combined[X_labels], model.predict(all_combined[X_labels]), label='model')
-  plt.xlabel(X_labels[0])
-  plt.ylabel(Y_label)
-  plt.legend()
-  plt.show()
+  # plt.plot(all_combined[X_labels], all_combined[Y_label], 'o', label='data')
+  # plt.plot(all_combined[X_labels], model.predict(all_combined[X_labels]), label='model')
+  # plt.xlabel(X_labels[0])
+  # plt.ylabel(Y_label)
+  # plt.legend()
+  # plt.show()
