@@ -490,6 +490,9 @@ if __name__ == "__main__":
       # pathAngleRad ~~= carState.steeringAngleDeg * (pi / 180) / 2.521348782
       # pathAngleRad ~~= carState.steeringAngleDeg * (pi / 180) / (0.182706434 * steerRatio)
 
+      # pathAngleRad ~= carState.steeringAngleDeg / 211.92765199
+      # pathAngleRad ~= carState.steeringAngleDeg * (pi / 180) / 3.698835303
+
       # carState.steeringAngleDeg = 147.15600605 * pathAngleRad + 23.22011968 * roll
       # carState.steeringAngleDeg ~= 147.15600605 * pathAngleRad
       # pathAngleRad = carState.steeringAngleDeg / 147.15600605
