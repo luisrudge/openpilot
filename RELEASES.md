@@ -1,9 +1,13 @@
-Version 0.8.16 (2022-XX-XX)
+incognitojam Version 0.8.16 (2022-XX-XX)
 ========================
-* Chevrolet Bolt EUV 2022-23 support thanks to JasonJShuler!
-* Hyundai Ioniq 5 2022 support thanks to sunnyhaibin!
-* Hyundai Kona Electric 2022 support thanks to sunnyhaibin!
-* Subaru Outback 2020-22 support
+* Support 5 vehicle models
+  * Ford Escape 4th Gen
+  * Ford Explorer 6th Gen
+  * Ford Focus 4th Gen
+  * Ford Maverick 1st Gen
+  * Ford Transit 4th Gen
+* Steering control improvements
+  * Reduced ping pong
 
 Version 0.8.15 (2022-07-20)
 ========================
