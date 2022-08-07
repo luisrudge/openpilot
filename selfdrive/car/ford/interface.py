@@ -18,7 +18,7 @@ class CarInterface(CarInterfaceBase):
 
     # Angle-based steering
     ret.steerControlType = car.CarParams.SteerControlType.angle
-    ret.steerActuatorDelay = 0.14
+    ret.steerActuatorDelay = 0.15
     ret.steerLimitTimer = 1.0
     tire_stiffness_factor = 1.0  # Let the params learner figure this out
 
@@ -32,7 +32,7 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.EXPLORER_MK6:
       ret.wheelbase = 3.025
-      ret.steerRatio = 13.8  # Copied from Focus
+      ret.steerRatio = 16.8  # learned
       ret.mass = 2050 + STD_CARGO_KG
 
     elif candidate == CAR.FOCUS_MK4:
