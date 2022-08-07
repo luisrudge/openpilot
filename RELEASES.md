@@ -8,6 +8,7 @@ incognitojam Version 0.8.16 (2022-XX-XX)
   * Ford Transit 4th Gen
 * Steering control improvements
   * Experiment: try to counteract Ford EPS roll compensation
+  * Reduced ping pong
 
 Version 0.8.15 (2022-07-20)
 ========================
