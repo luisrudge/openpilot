@@ -72,13 +72,15 @@ FEATURES = [
   # 'sendcan.LateralMotionControl.LatCtlCurv_NoRate_Actl',
   # 'sendcan.LateralMotionControl.LatCtlCurv_No_Actl',
 
-  'vehicleModel.roll',
-  'vehicleModel.actualCurvature',
+  'liveParameters.roll',
+  'liveParameters.rollAngleDeg',
+  'liveParameters.actualCurvature',
 
   'controlsState.desiredCurvature',
   'controlsState.lateralControlState.angleState.active',
-  # 'controlsState.lateralControlState.angleState.steeringAngleDeg',
-  # 'controlsState.lateralControlState.angleState.steeringAngleDesiredDeg',
+  'controlsState.lateralControlState.angleState.steeringAngleDeg',
+  'controlsState.lateralControlState.angleState.steeringAngleDesiredDeg',
+  'controlsState.steeringAngleDeltaDeg',
 
   'actuatorsOutput.steeringAngleDeg',
 ]
@@ -87,19 +89,19 @@ X_labels = [
   # 'carState.vEgo',
   # 'can.Yaw_Data_FD1.VehYaw_W_Actl',
   'sendcan.LateralMotionControl.LatCtlPath_An_Actl',
-  # 'vehicleModel.roll',
+  'liveParameters.rollAngleDeg',
 ]
 Y_label = 'carState.steeringAngleDeg'
 
 SECONDS = 100
 MIN_TIME_ENGAGED = 3 * SECONDS
-MIN_SEGMENT_TIME = 2 * SECONDS
+MIN_SEGMENT_TIME = 0.5 * SECONDS
 
 Record = namedtuple('Record', [
   'carState',
   'can',
   'sendcan',
-  'vehicleModel',
+  'liveParameters',
   'controlsState',
   'actuatorsOutput',
 ])
@@ -109,7 +111,7 @@ def create_record() -> Record:
     carState=None,
     can=None,
     sendcan=None,
-    vehicleModel=None,
+    liveParameters=None,
     controlsState=None,
     actuatorsOutput=None,
   )
@@ -143,7 +145,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
     if record.carState is not None and \
         record.can is not None and \
         record.sendcan is not None and \
-        record.vehicleModel is not None and \
+        record.liveParameters is not None and \
         record.controlsState is not None and \
         record.actuatorsOutput is not None:
 
@@ -157,7 +159,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
         carState=record.carState,
         can=record.can,
         sendcan=record.sendcan,
-        vehicleModel=record.vehicleModel,
+        liveParameters=record.liveParameters,
         controlsState=record.controlsState,
         actuatorsOutput=record.actuatorsOutput,
       ))
@@ -194,7 +196,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
       record = record._replace(sendcan = {k: v for k, v in cp_sent.vl.items() if v and isinstance(k, str)})
 
     elif msg.which() == 'liveParameters':
-      # update vehicle model, used for curvature calculations
+      # update live parameters, used for curvature calculations
       liveParameters = msg.liveParameters
 
       # copied from controlsd
@@ -205,9 +207,10 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
       vEgo = record.carState['vEgo'] if record.carState is not None else 0
       steeringAngleDeg = record.carState['steeringAngleDeg'] if record.carState is not None else 0
 
-      # update recorded vehicle model
-      record = record._replace(vehicleModel = {
+      # update recorded live parameters
+      record = record._replace(liveParameters = {
         'roll': liveParameters.roll,
+        'rollAngleDeg': VM.get_steer_from_curvature(0.0, vEgo, liveParameters.roll),
         'actualCurvature': -VM.calc_curvature(math.radians(steeringAngleDeg - liveParameters.angleOffsetDeg), vEgo, liveParameters.roll),
       })
 
@@ -228,6 +231,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
             'steeringAngleDesiredDeg': angleState.steeringAngleDesiredDeg,
           },
         },
+        'steeringAngleDeltaDeg': angleState.steeringAngleDesiredDeg - angleState.steeringAngleDeg,
       })
 
     elif msg.which() == 'carControl':
@@ -256,10 +260,10 @@ def plot(dataset: pd.DataFrame, title=None):
   #   axs[0, 0].set_title('carState.steeringTorque')
   #   axs[0, 0].plot(dataset['carState.steeringTorque'])
 
-  if 'controlsState.desiredCurvature' in dataset and 'vehicleModel.actualCurvature' in dataset:
+  if 'controlsState.desiredCurvature' in dataset and 'liveParameters.actualCurvature' in dataset:
     axs[0, 0].set_title('controlsState.desiredCurvature')
     axs[0, 0].plot(dataset['controlsState.desiredCurvature'], label='desiredCurvature')
-    axs[0, 0].plot(dataset['vehicleModel.actualCurvature'], label='actualCurvature')
+    axs[0, 0].plot(dataset['liveParameters.actualCurvature'], label='actualCurvature')
     axs[0, 0].legend()
 
   if 'carState.steeringPressed' in dataset and 'controlsState.lateralControlState.angleState.active' in dataset:
@@ -292,10 +296,15 @@ def plot(dataset: pd.DataFrame, title=None):
     #   axs[1, 1].plot(np.radians(dataset['carState.pathAngleRad']), label='carState.pathAngleRad')
     axs[1, 1].legend()
 
-  if 'vehicleModel.roll' in dataset and 'can.Yaw_Data_FD1.VehRol_W_Actl' in dataset:
-    axs[2, 1].set_title('vehicleModel.roll')
-    axs[2, 1].plot(dataset['vehicleModel.roll'], label='vehicleModel.roll')
-    axs[2, 1].plot(dataset['can.Yaw_Data_FD1.VehRol_W_Actl'], label='Yaw_Data_FD1.VehRol_W_Actl')
+  # if 'liveParameters.roll' in dataset and 'can.Yaw_Data_FD1.VehRol_W_Actl' in dataset:
+  #   axs[2, 1].set_title('liveParameters.roll')
+  #   axs[2, 1].plot(dataset['liveParameters.roll'], label='liveParameters.roll')
+  #   axs[2, 1].plot(dataset['can.Yaw_Data_FD1.VehRol_W_Actl'], label='Yaw_Data_FD1.VehRol_W_Actl')
+  #   axs[2, 1].legend()
+
+  if 'liveParameters.rollAngleDeg' in dataset:
+    axs[2, 1].set_title('liveParameters.rollAngleDeg')
+    axs[2, 1].plot(dataset['liveParameters.rollAngleDeg'], label='rollAngleDeg')
     axs[2, 1].legend()
 
 
@@ -348,7 +357,7 @@ if __name__ == "__main__":
   os.environ["FILEREADER_CACHE"] = "1"
 
   ROUTES = [
-    # "86d00e12925f4df7|2022-06-18--11-45-12",  # 18th June - Lancaster to Liverpool
+    "86d00e12925f4df7|2022-06-18--11-45-12",  # 18th June - Lancaster to Liverpool
 
     # "86d00e12925f4df7|2022-06-23--16-41-03",  # 23rd June - Lancaster to Blackpool
 
@@ -377,7 +386,10 @@ if __name__ == "__main__":
 
     # "86d00e12925f4df7|2022-07-20--18-12-24",  # 20th July - manchester to home
 
-    "86d00e12925f4df7|2022-07-21--13-05-25",  # 21st July - home to lancaster
+    # "86d00e12925f4df7|2022-07-21--13-05-25",  # 21st July - home to lancaster
+
+    # "59a107f5793d9cc0|2022-08-06--14-11-17",  # michaeelaln, 6th August
+    # "59a107f5793d9cc0|2022-08-07--00-13-33",  # michaeelaln, 7th August
   ]
 
   CACHE_LOGS = False
@@ -505,12 +517,20 @@ if __name__ == "__main__":
 
   print()
   print(f"Fitting all combined routes")
-  all_combined = pd.concat(all_combined)
+  data = pd.concat(all_combined)
+
+  # data['steeringAngleDeltaDeg'] = data['controlsState.lateralControlState.angleState.steeringAngleDesiredDeg'] - data['controlsState.lateralControlState.angleState.steeringAngleDeg']
+
+  # roll to curvature: (ACCELERATION_DUE_TO_GRAVITY * roll) / ((1 / sf) - u**2)
+  # curvature to angle:
+  # data['rollAngleDeg'] = data['liveParameters.roll']
+
+
   model = linear_model.LinearRegression()
-  model.fit(all_combined[X_labels], all_combined[Y_label])
+  model.fit(data[X_labels], data[Y_label])
   print(f"Coefficients: {model.coef_}")
   print(f"Intercept: {model.intercept_}")
-  print(f"R2: {model.score(all_combined[X_labels], all_combined[Y_label])}")
+  print(f"R2: {model.score(data[X_labels], data[Y_label])}")
 
   # plot
   # plt.plot(all_combined[X_labels], all_combined[Y_label], 'o', label='data')
