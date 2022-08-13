@@ -9,6 +9,7 @@ incognitojam Version 0.8.16 (2022-XX-XX)
 * Steering control improvements
   * reduced ping pong
   * experiment: disabled OP roll compensation to solve hugging
+* Ford Delphi MRR radar support
 
 Version 0.8.15 (2022-07-20)
 ========================
