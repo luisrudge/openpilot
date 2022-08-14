@@ -6,6 +6,7 @@ import os
 
 from pathlib import Path
 from typing import List, Tuple
+from mpl_toolkits import mplot3d
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,7 @@ from tools.lib.logreader import MultiLogIterator
 def get_can_parser(CP):
   signals = [
     # sig_name, sig_address
+    ("VehRol_W_Actl", "Yaw_Data_FD1"),                    # vehicle roll angle (rad)
     ("VehYaw_W_Actl", "Yaw_Data_FD1"),                    # vehicle yaw angle (rad)
   ]
   checks = [
@@ -59,9 +61,11 @@ def get_sent_can_parser(CP):
 FEATURES = [
   'carState.vEgo',
   'carState.steeringAngleDeg',
+  'carState.steeringAngle',
   'carState.steeringTorque',
   'carState.steeringPressed',
 
+  'can.Yaw_Data_FD1.VehRol_W_Actl',
   'can.Yaw_Data_FD1.VehYaw_W_Actl',
 
   # 'sendcan.LateralMotionControl.LatCtl_D_Rq',
@@ -74,27 +78,39 @@ FEATURES = [
 
   'liveParameters.roll',
   'liveParameters.rollAngleDeg',
+  'liveParameters.rollAngle',
   'liveParameters.actualCurvature',
+  'liveParameters.stockRollAngleDeg',
+  'liveParameters.stockRollAngle',
 
   'controlsState.desiredCurvature',
   'controlsState.lateralControlState.angleState.active',
   'controlsState.lateralControlState.angleState.steeringAngleDeg',
+  'controlsState.lateralControlState.angleState.steeringAngle',
   'controlsState.lateralControlState.angleState.steeringAngleDesiredDeg',
+  'controlsState.lateralControlState.angleState.steeringAngleDesired',
   'controlsState.steeringAngleDeltaDeg',
+  'controlsState.steeringAngleDelta',
 
   'actuatorsOutput.steeringAngleDeg',
+  'actuatorsOutput.steeringAngle',
 ]
 
 X_labels = [
   # 'carState.vEgo',
+  'can.Yaw_Data_FD1.VehRol_W_Actl',
   # 'can.Yaw_Data_FD1.VehYaw_W_Actl',
   'sendcan.LateralMotionControl.LatCtlPath_An_Actl',
-  'liveParameters.rollAngleDeg',
+  # 'liveParameters.rollAngleDeg',
+  # 'liveParameters.rollAngle',
+  # 'liveParameters.stockRollAngleDeg',
+  # 'liveParameters.stockRollAngle',
 ]
-Y_label = 'carState.steeringAngleDeg'
+# Y_label = 'carState.steeringAngleDeg'
+Y_label = 'carState.steeringAngle'
 
 SECONDS = 100
-MIN_TIME_ENGAGED = 3 * SECONDS
+MIN_TIME_ENGAGED = 2 * SECONDS
 MIN_SEGMENT_TIME = 0.5 * SECONDS
 
 Record = namedtuple('Record', [
@@ -128,9 +144,6 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
 
   record = create_record()
   row_list: List = []
-
-  # state 'vEgo', 'steeringAngleDeg', 'steeringTorque', 'steeringPressed', 'actualCurvature'
-  # actuators 'enabled', 'rampType', 'precision', 'curvature', 'pathOffset', 'pathAngle'
 
   def explode_dicts(**kwargs):
     for k, v in kwargs.items():
@@ -175,6 +188,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
       record = record._replace(carState = {
         'vEgo': carState.vEgo,
         'steeringAngleDeg': carState.steeringAngleDeg,
+        'steeringAngle': carState.steeringAngleDeg * CV.DEG_TO_RAD,
         'steeringTorque': carState.steeringTorque,
         'steeringPressed': carState.steeringPressed,
       })
@@ -211,6 +225,9 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
       record = record._replace(liveParameters = {
         'roll': liveParameters.roll,
         'rollAngleDeg': VM.get_steer_from_curvature(0.0, vEgo, liveParameters.roll),
+        'rollAngle': VM.get_steer_from_curvature(0.0, vEgo, liveParameters.roll) * CV.DEG_TO_RAD,
+        'stockRollAngleDeg': VM.get_steer_from_curvature(0.0, vEgo, cp.vl['Yaw_Data_FD1']['VehRol_W_Actl']),
+        'stockRollAngle': VM.get_steer_from_curvature(0.0, vEgo, cp.vl['Yaw_Data_FD1']['VehRol_W_Actl']) * CV.DEG_TO_RAD,
         'actualCurvature': -VM.calc_curvature(math.radians(steeringAngleDeg - liveParameters.angleOffsetDeg), vEgo, liveParameters.roll),
       })
 
@@ -228,10 +245,13 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
           'angleState': {
             'active': angleState.active,
             'steeringAngleDeg': angleState.steeringAngleDeg,
+            'steeringAngle': angleState.steeringAngleDeg * CV.DEG_TO_RAD,
             'steeringAngleDesiredDeg': angleState.steeringAngleDesiredDeg,
+            'steeringAngleDesired': angleState.steeringAngleDesiredDeg * CV.DEG_TO_RAD,
           },
         },
         'steeringAngleDeltaDeg': angleState.steeringAngleDesiredDeg - angleState.steeringAngleDeg,
+        'steeringAngleDelta': (angleState.steeringAngleDesiredDeg - angleState.steeringAngleDeg) * CV.DEG_TO_RAD,
       })
 
     elif msg.which() == 'carControl':
@@ -241,6 +261,7 @@ def collect(lr: MultiLogIterator) -> Tuple[int, List]:
       # update recorded actuators output
       record = record._replace(actuatorsOutput = {
         'steeringAngleDeg': actuatorsOutput.steeringAngleDeg,
+        'steeringAngle': actuatorsOutput.steeringAngleDeg * CV.DEG_TO_RAD,
       })
 
     try_append()
@@ -272,28 +293,18 @@ def plot(dataset: pd.DataFrame, title=None):
     axs[1, 0].plot(dataset['carState.steeringPressed'], label='steeringPressed')
     axs[1, 0].legend()
 
-  if 'actuatorsOutput.steeringAngleDeg' in dataset and 'carState.steeringAngleDeg' in dataset:
-    axs[0, 1].set_title('steeringAngleDeg')
-    axs[0, 1].plot(dataset['actuatorsOutput.steeringAngleDeg'], label='desired (actuatorsOutput)')
-    axs[0, 1].plot(dataset['carState.steeringAngleDeg'], label='actual (carState)')
+  if 'actuatorsOutput.steeringAngle' in dataset and 'carState.steeringAngle' in dataset:
+    axs[0, 1].set_title('steeringAngle')
+    axs[0, 1].plot(dataset['actuatorsOutput.steeringAngle'], label='desired (actuatorsOutput)')
+    axs[0, 1].plot(dataset['carState.steeringAngle'], label='actual (carState)')
     axs[0, 1].legend()
-
-    # # get gradient of both steeringAngleDeg
-    # grad_actuatorsOutput = np.gradient(dataset['actuatorsOutput.steeringAngleDeg'])
-    # grad_carState = np.gradient(dataset['carState.steeringAngleDeg'])
-
-    # axs[1, 1].set_title('gradient steeringAngleDeg')
-    # axs[1, 1].plot(grad_actuatorsOutput, label='d actuatorsOutput.steeringAngleDeg')
-    # axs[1, 1].plot(grad_carState, label='d carState.steeringAngleDeg')
-    # axs[1, 1].legend()
 
   if 'sendcan.LateralMotionControl.LatCtlPath_An_Actl' in dataset:
     axs[1, 1].set_title('LateralMotionControl.LatCtlPath_An_Actl')
     axs[1, 1].plot(dataset['sendcan.LateralMotionControl.LatCtlPath_An_Actl'], label='LatCtlPath_An_Actl')
-    # if 'carState.steeringAngleDeg' in dataset:
-    #   dataset['carState.steeringAngleRad'] = np.radians(dataset['carState.steeringAngleDeg'])
-    #   dataset['carState.pathAngleRad'] = dataset['carState.steeringAngleRad'] / 13.8
-    #   axs[1, 1].plot(np.radians(dataset['carState.pathAngleRad']), label='carState.pathAngleRad')
+    # if 'carState.steeringAngle' in dataset:
+    #   dataset['carState.pathAngle'] = dataset['carState.steeringAngle'] / 13.8
+    #   axs[1, 1].plot(np.radians(dataset['carState.pathAngle']), label='carState.pathAngle')
     axs[1, 1].legend()
 
   # if 'liveParameters.roll' in dataset and 'can.Yaw_Data_FD1.VehRol_W_Actl' in dataset:
@@ -302,9 +313,11 @@ def plot(dataset: pd.DataFrame, title=None):
   #   axs[2, 1].plot(dataset['can.Yaw_Data_FD1.VehRol_W_Actl'], label='Yaw_Data_FD1.VehRol_W_Actl')
   #   axs[2, 1].legend()
 
-  if 'liveParameters.rollAngleDeg' in dataset:
-    axs[2, 1].set_title('liveParameters.rollAngleDeg')
-    axs[2, 1].plot(dataset['liveParameters.rollAngleDeg'], label='rollAngleDeg')
+  if 'liveParameters.stockRollAngle' in dataset:
+    axs[2, 1].set_title('liveParameters.stockRollAngle')
+    axs[2, 1].plot(dataset['liveParameters.stockRollAngle'], label='stockRollAngle')
+    if 'controlsState.steeringAngleDelta' in dataset:
+      axs[2, 1].plot(dataset['controlsState.steeringAngleDelta'], label='steeringAngleDelta')
     axs[2, 1].legend()
 
 
@@ -313,17 +326,13 @@ def prepare(dataset: pd.DataFrame) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
   rows = []
   all_rows = []
 
-  def extra(df: pd.DataFrame) -> pd.DataFrame:
-    # df['steeringAngleDeltaDeg'] = df['carState.steeringAngleDeg'] - df['actuatorsOutput.steeringAngleDeg']
-    return df
-
   def build_df():
     nonlocal segments, rows
 
     if len(rows) >= MIN_SEGMENT_TIME:
       # create new dataframe from processed rows
       df = pd.DataFrame(rows, columns=FEATURES)
-      segments.append(extra(df))
+      segments.append(df)
       all_rows.extend(rows)
 
     rows = []
@@ -349,7 +358,7 @@ def prepare(dataset: pd.DataFrame) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
 
   # build "superset" of all valid rows
   df = pd.DataFrame(all_rows, columns=FEATURES)
-  return extra(df), segments
+  return df, segments
 
 
 if __name__ == "__main__":
@@ -357,7 +366,7 @@ if __name__ == "__main__":
   os.environ["FILEREADER_CACHE"] = "1"
 
   ROUTES = [
-    "86d00e12925f4df7|2022-06-18--11-45-12",  # 18th June - Lancaster to Liverpool
+    # "86d00e12925f4df7|2022-06-18--11-45-12",  # 18th June - Lancaster to Liverpool
 
     # "86d00e12925f4df7|2022-06-23--16-41-03",  # 23rd June - Lancaster to Blackpool
 
@@ -389,10 +398,12 @@ if __name__ == "__main__":
     # "86d00e12925f4df7|2022-07-21--13-05-25",  # 21st July - home to lancaster
 
     # "59a107f5793d9cc0|2022-08-06--14-11-17",  # michaeelaln, 6th August
-    # "59a107f5793d9cc0|2022-08-07--00-13-33",  # michaeelaln, 7th August
+    "59a107f5793d9cc0|2022-08-07--00-13-33",  # michaeelaln, 7th August
+
+    # "86d00e12925f4df7|2022-08-11--16-45-58",  # 11th August
   ]
 
-  CACHE_LOGS = False
+  CACHE_LOGS = True
 
   all_combined = []
 
@@ -436,7 +447,7 @@ if __name__ == "__main__":
       # prepare dataset by splitting into valid segments for analysis
       combined, segments = prepare(dataset)
 
-      plot(combined, title=f"Combined all active segments, Length {(len(combined)/100.):.2f}s")
+      # plot(combined, title=f"Combined all active segments, Length {(len(combined)/100.):.2f}s")
 
       with open(f"{r.name.time_str}--combined.csv", 'w', encoding='utf8', newline='') as f:
         fc = csv.DictWriter(f, fieldnames=combined.columns)
@@ -444,8 +455,8 @@ if __name__ == "__main__":
         fc.writerows(combined.to_dict('records'))
 
       for i, segment in enumerate(segments):
-        if len(segment) > 10 * SECONDS:
-          plot(segment, title=f"Segment {i+1}/{len(segments)}, Length {(len(segment)/100.):.2f}s")
+        # if len(segment) > 10 * SECONDS:
+        #   plot(segment, title=f"Segment {i+1}/{len(segments)}, Length {(len(segment)/100.):.2f}s")
 
         with open(f"{r.name.time_str}--{i}.csv", 'w', encoding='utf8', newline='') as f:
           fc = csv.DictWriter(f, fieldnames=segment.columns)
@@ -533,9 +544,12 @@ if __name__ == "__main__":
   print(f"R2: {model.score(data[X_labels], data[Y_label])}")
 
   # plot
-  # plt.plot(all_combined[X_labels], all_combined[Y_label], 'o', label='data')
-  # plt.plot(all_combined[X_labels], model.predict(all_combined[X_labels]), label='model')
-  # plt.xlabel(X_labels[0])
-  # plt.ylabel(Y_label)
-  # plt.legend()
-  # plt.show()
+  fig = plt.figure()
+  ax = plt.axes(projection='3d')
+
+  ax.plot3D(data[X_labels[0]], data[X_labels[1]], model.predict(data[X_labels]), color='blue')
+  ax.scatter3D(data[X_labels[0]], data[X_labels[1]], data[Y_label], c=data[Y_label], cmap='viridis')
+  ax.set_xlabel(X_labels[0])
+  ax.set_ylabel(X_labels[1])
+  ax.set_zlabel(Y_label)
+  plt.show()
