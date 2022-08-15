@@ -7,7 +7,8 @@ incognitojam Version 0.8.16 (2022-XX-XX)
   * Ford Maverick 1st Gen
   * Ford Transit 4th Gen
 * Steering control improvements
-  * Reduced ping pong
+  * reduced ping pong
+  * experiment: disabled OP roll compensation to solve hugging
 
 Version 0.8.15 (2022-07-20)
 ========================
