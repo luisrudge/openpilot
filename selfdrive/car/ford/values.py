@@ -24,6 +24,11 @@ class CarControllerParams:
   ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_points=[0., 5., 15.], max_angle_diff_points=[1.66, 1.16, 0.133])
 
 
+class RADAR:
+  DELPHI_ESR = 'ford_fusion_2018_adas'
+  DELPHI_MRR = 'FORD_CADS'
+
+
 class CANBUS:
   main = 0
   radar = 1
@@ -134,9 +139,9 @@ FW_VERSIONS = {
 
 
 DBC = {
-  CAR.ESCAPE_MK4: dbc_dict('ford_lincoln_base_pt', None),
-  CAR.EXPLORER_MK6: dbc_dict('ford_lincoln_base_pt', None),
-  CAR.FOCUS_MK4: dbc_dict('ford_lincoln_base_pt', None),
-  CAR.MAVERICK_MK1: dbc_dict('ford_lincoln_base_pt', None),
-  CAR.TRANSIT_MK4: dbc_dict('ford_lincoln_base_pt', None),
+  CAR.ESCAPE_MK4: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR),
+  CAR.EXPLORER_MK6: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR),
+  CAR.FOCUS_MK4: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR),
+  CAR.MAVERICK_MK1: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR),
+  CAR.TRANSIT_MK4: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR),
 }
