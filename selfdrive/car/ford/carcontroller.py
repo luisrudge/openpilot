@@ -2,8 +2,8 @@ from cereal import car
 from common.numpy_fast import clip
 from opendbc.can.packer import CANPacker
 from selfdrive.car import apply_std_curvature_limits
-from selfdrive.car.ford.fordcan import create_acc_ui_msg, create_button_msg, create_lat_ctl_msg, create_lka_msg, \
-  create_lkas_ui_msg
+from selfdrive.car.ford.fordcan import create_acc_command, create_acc_ui_msg, create_button_msg, create_lat_ctl_msg, \
+  create_lka_msg, create_lkas_ui_msg
 from selfdrive.car.ford.values import CANBUS, CarControllerParams
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -76,6 +76,26 @@ class CarController:
       can_sends.append(create_lat_ctl_msg(self.packer, lca_rq, ramp_type, precision, 0., 0., -apply_curvature, 0.))
 
       self.apply_curvature_last = apply_curvature
+
+
+    ### longitudinal control ###
+    # send acc command at 50Hz
+    if self.CP.openpilotLongitudinalControl and (self.frame % self.CCP.ACC_CONTROL_STEP) == 0:
+      accel = clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX)
+
+      if accel > -0.5:
+        prpl_a_rq = accel
+        brk_decel_b_rq = 0
+      else:
+        prpl_a_rq = -5.0
+        brk_decel_b_rq = 1
+
+      brk_a_rq = accel
+      brk_prchg_b_rq = 1 if accel < -0.1 else 0
+
+      cmbb_enable = 1 if CC.longActive else 0
+
+      can_sends.append(create_acc_command(cmbb_enable, prpl_a_rq, brk_a_rq, brk_decel_b_rq, brk_prchg_b_rq))
 
 
     ### ui ###

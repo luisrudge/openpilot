@@ -63,6 +63,38 @@ def create_lat_ctl_msg(packer, lca_rq: int, ramp_type: int, precision: int, path
   return packer.make_can_msg("LateralMotionControl", CANBUS.main, values)
 
 
+def create_acc_command(packer, cmbb_enable: bool, prpl_a_rq: float, brk_a_rq: float, brk_prchg_b_rq: bool, brk_decel_b_rq: bool):
+  """
+  Creates a CAN message for the Ford ACC Command.
+
+  This command can be used to enable ACC, to set the ACC gas/brake/decel values
+  and to disable ACC.
+
+  Frequency is 50Hz.
+  """
+
+  values = {
+    "AccBrkPulse_B_Rq": 0,
+    "AccAutoResum_D_Rq": 0,
+    "AccBrkTot_A_Rq": brk_a_rq,           # [-20|11.9449] m/s^2
+    "AccPrpl_A_Pred": 0,                  # [-5|5.23] m/s^2
+    "AccVeh_V_Trg": 0,                    # kph
+    "AccBrkPrkEl_B_Rq": 0,
+    "Cmbb_B_Enbl": cmbb_enable,           # bool
+    "CmbbOvrrd_B_RqDrv": 0,
+    "CmbbDeny_B_Actl": 0,
+    "CmbbEngTqMn_B_Rq": 0,
+    "AccPrpl_A_Rq": prpl_a_rq,            # [-5|5.23] m/s^2
+    "AccDeny_B_Rq": 0,
+    "AccResumEnbl_B_Rq": 0,
+    "AccCancl_B_Rq": 0,
+    "AccBrkPrchg_B_Rq": brk_prchg_b_rq,   # bool
+    "AccBrkDecel_B_Rq": brk_decel_b_rq,   # bool
+    "AccStopStat_B_Rq": 0,
+  }
+  return packer.make_can_msg("ACCDATA", 0, values)
+
+
 def create_lkas_ui_msg(packer, main_on: bool, enabled: bool, steer_alert: bool, hud_control, stock_values: dict):
   """
   Creates a CAN message for the Ford IPC IPMA/LKAS status.

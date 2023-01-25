@@ -19,6 +19,8 @@ CurvatureLimit = namedtuple('CurvatureLimit', ['speed_bp', 'curvature_v'])
 class CarControllerParams:
   # Messages: Lane_Assist_Data1, LateralMotionControl
   STEER_STEP = 5
+  # Message: ACCDATA
+  ACC_CONTROL_STEP = 2
   # Message: IPMA_Data
   LKAS_UI_STEP = 100
   # Message: ACCDATA_3
@@ -31,6 +33,9 @@ class CarControllerParams:
 
   CURVATURE_RATE_LIMIT_UP = CurvatureLimit(speed_bp=[5, 15, 25], curvature_v=[0.005, 0.00056, 0.0002])
   CURVATURE_RATE_LIMIT_DOWN = CurvatureLimit(speed_bp=[5, 15, 25], curvature_v=[0.008, 0.00089, 0.00032])
+
+  ACCEL_MAX = 2.0               # m/s^s max acceleration
+  ACCEL_MIN = -3.5              # m/s^s max deceleration
 
   def __init__(self, CP):
     pass
