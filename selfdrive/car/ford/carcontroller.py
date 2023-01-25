@@ -95,7 +95,7 @@ class CarController:
 
       cmbb_enable = 1 if CC.longActive else 0
 
-      can_sends.append(create_acc_command(cmbb_enable, prpl_a_rq, brk_a_rq, brk_decel_b_rq, brk_prchg_b_rq))
+      can_sends.append(create_acc_command(self.packer, cmbb_enable, prpl_a_rq, brk_a_rq, brk_decel_b_rq, brk_prchg_b_rq))
 
 
     ### ui ###
