@@ -18,7 +18,7 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.ford)]
 
     ret.steerControlType = car.CarParams.SteerControlType.angle
-    ret.steerActuatorDelay = 0.1
+    ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 1.0
 
     # TODO: detect stop-and-go vehicles
@@ -26,17 +26,17 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.ESCAPE_MK4:
       ret.wheelbase = 2.71
-      ret.steerRatio = 14.3  # Copied from Focus
-      ret.mass = 1650 + STD_CARGO_KG  # mean between normal and PHEV
+      ret.steerRatio = 16.7
+      ret.mass = 1750 + STD_CARGO_KG  # mean between normal and PHEV
 
     elif candidate == CAR.FOCUS_MK4:
       ret.wheelbase = 2.7
-      ret.steerRatio = 13.8  # learned
+      ret.steerRatio = 15.0
       ret.mass = 1350 + STD_CARGO_KG  # hatchback
 
     elif candidate == CAR.MAVERICK_MK1:
       ret.wheelbase = 3.076
-      ret.steerRatio = 14.3  # Copied from Focus
+      ret.steerRatio = 17.0
       ret.mass = 1650 + STD_CARGO_KG
 
     else:
