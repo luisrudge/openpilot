@@ -22,7 +22,7 @@ class CarState(CarStateBase):
     ret = car.CarState.new_message()
 
     # car speed
-    ret.vEgoRaw = cp.vl["EngVehicleSpThrottle2"]["Veh_V_ActlEng"] * CV.KPH_TO_MS
+    ret.vEgoRaw = cp.vl["BrakeSysFeatures"]["Veh_V_ActlBrk"] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.yawRate = cp.vl["Yaw_Data_FD1"]["VehYaw_W_Actl"] * CV.RAD_TO_DEG
     ret.standstill = cp.vl["DesiredTorqBrk"]["VehStop_D_Stat"] == 1
@@ -97,7 +97,7 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     signals = [
       # sig_name, sig_address
-      ("Veh_V_ActlEng", "EngVehicleSpThrottle2"),            # ABS vehicle speed (kph)
+      ("Veh_V_ActlBrk", "BrakeSysFeatures"),                 # ABS vehicle speed (kph)
       ("VehYaw_W_Actl", "Yaw_Data_FD1"),                     # ABS vehicle yaw rate (rad/s)
       ("VehStop_D_Stat", "DesiredTorqBrk"),                  # ABS vehicle stopped
       ("PrkBrkStatus", "DesiredTorqBrk"),                    # ABS park brake status
@@ -126,7 +126,7 @@ class CarState(CarStateBase):
 
     checks = [
       # sig_address, frequency
-      ("EngVehicleSpThrottle2", 50),
+      ("BrakeSysFeatures", 50),
       ("Yaw_Data_FD1", 100),
       ("DesiredTorqBrk", 50),
       ("EngVehicleSpThrottle", 100),
