@@ -11,10 +11,14 @@ AngleRateLimit = namedtuple('AngleRateLimit', ['speed_points', 'max_angle_diff_p
 
 
 class CarControllerParams:
-  LKAS_STEP = 5       # 20Hz Lane_Assist_Data1, LateralMotionControl
-  ACC_STEP = 2        # 50Hz ACCDATA
-  LKAS_UI_STEP = 100  # 1Hz  IPMA_Data
-  ACC_UI_STEP = 5     # 20Hz ACCDATA_3
+  # Messages: Lane_Assist_Data1, LateralMotionControl
+  STEER_STEP = 5
+  # Message: ACCDATA
+  ACC_CONTROL_STEP = 2
+  # Message: IPMA_Data
+  LKAS_UI_STEP = 100
+  # Message: ACCDATA_3
+  ACC_UI_STEP = 5
 
   ACCEL_MAX = 2.0     # 2.0 m/s^2 max acceleration
   ACCEL_MIN = -3.5    # 3.5 m/s^2 max deceleration
