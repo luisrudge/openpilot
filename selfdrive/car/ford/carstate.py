@@ -128,7 +128,6 @@ class CarState(CarStateBase):
       ("Cluster_Info1_FD1", 10),
       ("SteeringPinion_Data", 100),
       ("EPAS_INFO", 50),
-      ("Lane_Assist_Data3_FD1", 33),
       ("Steering_Data_FD1", 10),
       ("BodyInfo_3_FD1", 2),
       ("RCMStatusMessage2_FD1", 10),
