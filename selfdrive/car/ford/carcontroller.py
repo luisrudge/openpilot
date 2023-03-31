@@ -1,8 +1,9 @@
 from cereal import car
 from common.numpy_fast import clip
+from opendbc.can.packer import CANPacker
+from selfdrive.car import apply_std_steer_angle_limits
 from selfdrive.car.ford import fordcan
 from selfdrive.car.ford.values import CarControllerParams
-from opendbc.can.packer import CANPacker
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -13,32 +14,11 @@ class CarController():
     self.VM = VM
     self.packer = CANPacker(dbc_name)
 
-    self.actuators_last = None
+    self.apply_curvature_last = 0
     self.steer_rate_limited = False
     self.main_on_last = False
     self.lkas_enabled_last = False
     self.steer_alert_last = False
-
-  def apply_ford_actuator_limits(self, actuators, vEgo):  # pylint: disable=unused-argument
-    new_actuators = actuators.copy()
-    steer_rate_limited = False
-
-    new_actuators.curvature = clip(actuators.curvature, -0.02, 0.02094)                 # LatCtlCurv_No_Actl
-    steer_rate_limited |= new_actuators.curvature != actuators.curvature
-
-    new_actuators.curvatureRate = clip(actuators.curvatureRate, -0.001024, 0.00102375)  # LatCtlCurv_NoRate_Actl
-    steer_rate_limited |= new_actuators.curvatureRate != actuators.curvatureRate
-
-    new_actuators.pathAngle = clip(actuators.pathAngle, -0.01, 0.01)                    # LatCtlPath_An_Actl
-    steer_rate_limited |= new_actuators.pathAngle != actuators.pathAngle
-
-    new_actuators.pathDeviation = clip(actuators.pathDeviation, -5.12, 5.11)            # LatCtlPathOffst_L_Actl
-    steer_rate_limited |= new_actuators.pathDeviation != actuators.pathDeviation
-
-    self.actuators_last = new_actuators
-    self.steer_rate_limited = steer_rate_limited
-
-    return new_actuators
 
   def update(self, CC, CS, frame):
     can_sends = []
@@ -71,41 +51,18 @@ class CarController():
 
 
     ### lateral control ###
-
-    # apply rate limits
-    new_actuators = self.apply_ford_actuator_limits(actuators, CS.out.vEgo)
-
     # send steering commands at 20Hz
     if (frame % CarControllerParams.STEER_STEP) == 0:
-      lca_rq = 1 if CC.latActive else 0
+      if CC.latActive:
+        # apply limits to curvature and clip to signal range
+        apply_curvature = apply_std_steer_angle_limits(actuators.curvature, self.apply_curvature_last, CS.out.vEgo, CarControllerParams)
+        apply_curvature = clip(apply_curvature, -CarControllerParams.CURVATURE_MAX, CarControllerParams.CURVATURE_MAX)
+      else:
+        apply_curvature = 0.
 
-      curvature, curvature_rate = new_actuators.curvature, new_actuators.curvatureRate
-      path_angle, path_offset = new_actuators.pathAngle, new_actuators.pathDeviation
-
-      # convert actuators curvature to steer angle
-      # this is only used for debugging and LKA
-      angle_deg = self.VM.get_steer_from_curvature(new_actuators.curvature, CS.out.vEgo, 0.0)
-
-      # ramp rate: 0=Slow, 1=Medium, 2=Fast, 3=Immediately
-      # slower ramp rate when predicted path deviation is low
-      # from observation of stock system this makes everything smoother
-      # offset_magnitude = abs(path_offset)
-      # if offset_magnitude < 0.15:
-      #   ramp_type = 0
-      # elif offset_magnitude < 1.0:
-      #   ramp_type = 1
-      # elif offset_magnitude < 2.0:
-      #   ramp_type = 2
-      # else:
-      #   ramp_type = 3
-      ramp_type = 2
-
-      # precision: 0=Comfortable, 1=Precise
-      precision = 0
-
-      can_sends.append(fordcan.create_lkas_command(self.packer, angle_deg, curvature))
-      can_sends.append(fordcan.create_tja_command(self.packer, lca_rq, ramp_type, precision,
-                                                  path_offset, path_angle, curvature_rate, curvature))
+      self.apply_curvature_last = apply_curvature
+      can_sends.append(fordcan.create_lkas_command(self.packer))
+      can_sends.append(fordcan.create_lat_ctl_msg(self.packer, CC.latActive, 0., 0., -apply_curvature, 0.))
 
 
     ### ui ###
@@ -122,5 +79,8 @@ class CarController():
     self.main_on_last = main_on
     self.lkas_enabled_last = CC.latActive
     self.steer_alert_last = steer_alert
+
+    new_actuators = actuators.copy()
+    new_actuators.curvature = self.apply_curvature_last
 
     return new_actuators, can_sends
