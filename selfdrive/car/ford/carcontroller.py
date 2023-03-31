@@ -1,5 +1,4 @@
 from cereal import car
-from common.conversions import Conversions as CV
 from common.numpy_fast import clip
 from selfdrive.car.ford import fordcan
 from selfdrive.car.ford.values import CarControllerParams
@@ -16,8 +15,6 @@ class CarController():
 
     self.actuators_last = None
     self.steer_rate_limited = False
-    self.braking = False
-    self.brake_steady = 0.
     self.main_on_last = False
     self.lkas_enabled_last = False
     self.steer_alert_last = False
@@ -43,41 +40,6 @@ class CarController():
 
     return new_actuators
 
-  def compute_gas_brake(self, accel, speed):
-    creep_brake = 0.0
-
-    # TODO: no idea if these values are sane for ford
-    creep_speed = 2.3
-    creep_brake_value = 0.15
-
-    if speed < creep_speed:
-      creep_brake = (creep_speed - speed) / creep_speed * creep_brake_value
-
-    gb = float(accel) / 4.8 - creep_brake
-    return clip(gb, 0.0, 1.0), clip(-gb, 0.0, 1.0)
-
-  def brake_hysteresis(self, brake, vEgo):  # pylint: disable=unused-argument
-    # hyst params
-    brake_hyst_on = 0.02    # to activate brakes exceed this value
-    brake_hyst_off = 0.005  # to deactivate brakes below this value
-    brake_hyst_gap = 0.01   # don't change brake command for small ocilalitons within this value
-
-    #*** histeresis logic to avoid brake blinking. go above 0.1 to trigger
-    if (brake < brake_hyst_on and not self.braking) or brake < brake_hyst_off:
-      brake = 0.
-    self.braking = brake > 0.
-
-    # for small brake oscillations within brake_hyst_gap, don't change the brake command
-    if brake == 0.:
-      self.brake_steady = 0.
-    elif brake > self.brake_steady + brake_hyst_gap:
-      self.brake_steady = brake - brake_hyst_gap
-    elif brake < self.brake_steady - brake_hyst_gap:
-      self.brake_steady = brake + brake_hyst_gap
-    brake = self.brake_steady
-
-    return brake
-
   def update(self, CC, CS, frame):
     can_sends = []
 
@@ -95,18 +57,17 @@ class CarController():
     ### longitudinal control ###
     # send acc command at 50Hz
     if self.CP.openpilotLongitudinalControl and (frame % CarControllerParams.ACC_CONTROL_STEP) == 0:
-      acc_rq = 1 if CC.longActive else 0
-
       accel = clip(actuators.accel, CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX)
-      apply_gas, apply_brake = self.compute_gas_brake(accel, CS.out.vEgo)
-      apply_brake = self.brake_hysteresis(apply_brake, CS.out.vEgo)
 
-      decel_rq = 1 if apply_brake <= -0.08 else 0   # bool
+      precharge_brake = accel < -0.1
+      if accel > -0.5:
+        gas = accel
+        decel = False
+      else:
+        gas = -5.0
+        decel = True
 
-      acc_vel = CS.out.cruiseState.speed * CV.MS_TO_KPH  # kph
-
-      can_sends.append(fordcan.create_acc_command(self.packer, acc_rq, apply_gas, apply_brake,
-                                                  decel_rq, acc_vel))
+      can_sends.append(fordcan.create_acc_command(self.packer, CC.longActive, gas, accel, precharge_brake, decel))
 
 
     ### lateral control ###
