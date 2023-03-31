@@ -6,7 +6,6 @@ from selfdrive.car import dbc_dict
 from selfdrive.car.docs_definitions import CarInfo
 
 Ecu = car.CarParams.Ecu
-TransmissionType = car.CarParams.TransmissionType
 
 AngleRateLimit = namedtuple('AngleRateLimit', ['speed_points', 'max_angle_diff_points'])
 
