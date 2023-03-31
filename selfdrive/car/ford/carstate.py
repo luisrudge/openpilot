@@ -1,5 +1,3 @@
-from typing import Dict
-
 from cereal import car
 from common.conversions import Conversions as CV
 from opendbc.can.can_define import CANDefine
@@ -16,7 +14,7 @@ class CarState(CarStateBase):
     super().__init__(CP)
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     if CP.transmissionType == TransmissionType.automatic:
-      self.shifter_values = can_define.dv["Gear_Shift_by_Wire_FD1"]["TrnGear_D_RqDrv"]
+      self.shifter_values = can_define.dv["Gear_Shift_by_Wire_FD1"]["TrnRng_D_RqGsm"]
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -53,8 +51,8 @@ class CarState(CarStateBase):
 
     # gear
     if self.CP.transmissionType == TransmissionType.automatic:
-      gear = int(cp.vl["Gear_Shift_by_Wire_FD1"]["TrnGear_D_RqDrv"])
-      ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(gear, None))
+      gear = self.shifter_values.get(cp.vl["Gear_Shift_by_Wire_FD1"]["TrnRng_D_RqGsm"])
+      ret.gearShifter = self.parse_gear_shifter(gear)
     elif self.CP.transmissionType == TransmissionType.manual:
       ret.clutchPressed = cp.vl["Engine_Clutch_Data"]["CluPdlPos_Pc_Meas"] > 0
       if bool(cp.vl["BCM_Lamp_Stat_FD1"]["RvrseLghtOn_B_Stat"]):
@@ -86,14 +84,6 @@ class CarState(CarStateBase):
     self.lkas_status_stock_values = cp_cam.vl["IPMA_Data"]
 
     return ret
-
-  @staticmethod
-  def parse_gear_shifter(gear: str) -> car.CarState.GearShifter:
-    d: Dict[str, car.CarState.GearShifter] = {
-        'Park': GearShifter.park, 'Reverse': GearShifter.reverse, 'Neutral': GearShifter.neutral,
-        'Manual': GearShifter.manumatic, 'Drive': GearShifter.drive,
-    }
-    return d.get(gear, GearShifter.unknown)
 
   @staticmethod
   def get_can_parser(CP):
@@ -146,7 +136,7 @@ class CarState(CarStateBase):
 
     if CP.transmissionType == TransmissionType.automatic:
       signals += [
-        ("TrnGear_D_RqDrv", "Gear_Shift_by_Wire_FD1"),       # GWM transmission gear position
+        ("TrnGear_D_RqGsm", "Gear_Shift_by_Wire_FD1"),       # GWM transmission gear position
       ]
       checks += [
         ("Gear_Shift_by_Wire_FD1", 10),
