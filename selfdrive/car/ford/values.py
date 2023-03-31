@@ -21,6 +21,7 @@ class CarControllerParams:
   ACC_UI_STEP = 5
 
   CURVATURE_MAX = 0.02  # Max curvature for steering command, m^-1
+  STEER_DRIVER_ALLOWANCE = 1.0  # Driver intervention threshold, Nm
 
   # Curvature rate limits
   # TODO: unify field names used by curvature and angle control cars
