@@ -4,10 +4,11 @@ from enum import Enum, StrEnum
 from typing import Dict, List, Union
 
 from cereal import car
+from panda.python import uds
 from openpilot.selfdrive.car import AngleRateLimit, dbc_dict
 from openpilot.selfdrive.car.docs_definitions import CarFootnote, CarHarness, CarInfo, CarParts, Column, \
                                                      Device
-from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
+from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, p16, Request, StdQueries
 
 Ecu = car.CarParams.Ecu
 
@@ -107,6 +108,10 @@ CAR_INFO: Dict[str, Union[CarInfo, List[CarInfo]]] = {
   ],
 }
 
+# As-Built Data Block 02 (*-02-01 ... *-02-05)
+FORD_CONFIGURATION_REQUEST = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(0xDE01)
+FORD_CONFIGURATION_RESPONSE = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 0x40]) + p16(0xDE01)
+
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[
     # CAN and CAN FD queries are combined.
@@ -117,6 +122,13 @@ FW_QUERY_CONFIG = FwQueryConfig(
       bus=0,
       auxiliary=True,
     ),
+    Request(
+      [StdQueries.TESTER_PRESENT_REQUEST, FORD_CONFIGURATION_REQUEST],
+      [StdQueries.TESTER_PRESENT_RESPONSE, FORD_CONFIGURATION_RESPONSE],
+      whitelist_ecus=[Ecu.abs, Ecu.eps],
+      bus=0,
+      auxiliary=True,
+    )
   ],
   extra_ecus=[
     # We are unlikely to get a response from the PCM from behind the gateway
