@@ -126,19 +126,19 @@ FW_QUERY_CONFIG = FwQueryConfig(
       auxiliary=True,
     ),
   ] + [Request(
-    [StdQueries.TESTER_PRESENT_REQUEST] + [bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block) for block in block_range],
-    [StdQueries.TESTER_PRESENT_RESPONSE] + [bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block) for block in block_range],
+    [StdQueries.TESTER_PRESENT_REQUEST] + [bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block)],
+    [StdQueries.TESTER_PRESENT_RESPONSE] + [bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block)],
     whitelist_ecus=[ecu],
     bus=0,
     auxiliary=True,
     logging=True,
   ) for ecu, block_range in [
-    # (Ecu.abs, [1]),
-    (Ecu.combinationMeter, [3]),
+    (Ecu.abs, range(3)),  # [1]
+    (Ecu.combinationMeter, range(13)),
     (Ecu.debug, range(10)),  #  [0, 1, 4, 6, 8]
-    # (Ecu.eps, [1]),
-    # (Ecu.fwdCamera, [0]),
-  ]],
+    (Ecu.eps, range(3)),  # [1]
+    (Ecu.fwdCamera, range(4)),  # [0]
+  ] for block in block_range],
   extra_ecus=[
     (Ecu.engine, 0x7e0, None),            # Powertrain Control Module (PCM)
                                           #   Note: We are unlikely to get a response from the PCM
