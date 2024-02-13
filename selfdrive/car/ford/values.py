@@ -121,23 +121,24 @@ FW_QUERY_CONFIG = FwQueryConfig(
     Request(
       [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.MANUFACTURER_SOFTWARE_VERSION_REQUEST],
       [StdQueries.TESTER_PRESENT_RESPONSE, StdQueries.MANUFACTURER_SOFTWARE_VERSION_RESPONSE],
+      whitelist_ecus=[Ecu.abs, Ecu.eps, Ecu.fwdCamera, Ecu.fwdRadar],
       bus=0,
       auxiliary=True,
     ),
   ] + [Request(
-    [StdQueries.TESTER_PRESENT_REQUEST, bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block)],
-    [StdQueries.TESTER_PRESENT_RESPONSE, bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block)],
+    [StdQueries.TESTER_PRESENT_REQUEST] + [bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block) for block in block_range],
+    [StdQueries.TESTER_PRESENT_RESPONSE] + [bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block) for block in block_range],
     whitelist_ecus=[ecu],
     bus=0,
     auxiliary=True,
     logging=True,
   ) for ecu, block_range in [
-    (Ecu.abs, [1]),
+    # (Ecu.abs, [1]),
     (Ecu.combinationMeter, [3]),
-    (Ecu.debug, [0, 1, 4, 6, 8]),
-    (Ecu.eps, [1]),
-    (Ecu.fwdCamera, [0]),
-  ] for block in block_range],
+    (Ecu.debug, range(10)),  #  [0, 1, 4, 6, 8]
+    # (Ecu.eps, [1]),
+    # (Ecu.fwdCamera, [0]),
+  ]],
   extra_ecus=[
     (Ecu.engine, 0x7e0, None),            # Powertrain Control Module (PCM)
                                           #   Note: We are unlikely to get a response from the PCM
