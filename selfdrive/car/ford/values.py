@@ -108,9 +108,7 @@ CAR_INFO: Dict[str, Union[CarInfo, List[CarInfo]]] = {
   ],
 }
 
-# As-Built Data Block 02 (*-02-01 ... *-02-05)
-FORD_CONFIGURATION_REQUEST = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(0xDE01)
-FORD_CONFIGURATION_RESPONSE = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 0x40]) + p16(0xDE01)
+FORD_ASBUILT_DID = 0xDE00
 
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[
@@ -122,17 +120,26 @@ FW_QUERY_CONFIG = FwQueryConfig(
       bus=0,
       auxiliary=True,
     ),
-    Request(
-      [StdQueries.TESTER_PRESENT_REQUEST, FORD_CONFIGURATION_REQUEST],
-      [StdQueries.TESTER_PRESENT_RESPONSE, FORD_CONFIGURATION_RESPONSE],
-      whitelist_ecus=[Ecu.abs, Ecu.eps],
-      bus=0,
-      auxiliary=True,
-    )
-  ],
+  ] + [Request(
+    [StdQueries.TESTER_PRESENT_REQUEST, bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block)],
+    [StdQueries.TESTER_PRESENT_RESPONSE, bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(FORD_ASBUILT_DID + block)],
+    whitelist_ecus=[ecu],
+    bus=0,
+    auxiliary=True,
+    logging=True,
+  ) for ecu, block_range in [
+    (Ecu.abs, [1]),
+    (Ecu.combinationMeter, [3]),
+    (Ecu.debug, [0, 1, 4, 6, 8]),
+    (Ecu.eps, [1]),
+    (Ecu.fwdCamera, [0]),
+  ] for block in block_range],
   extra_ecus=[
-    # We are unlikely to get a response from the PCM from behind the gateway
-    (Ecu.engine, 0x7e0, None),
-    (Ecu.shiftByWire, 0x732, None),
+    (Ecu.engine, 0x7e0, None),            # Powertrain Control Module (PCM)
+                                          #   Note: We are unlikely to get a response from the PCM
+                                          #   from behind the gateway.
+    (Ecu.combinationMeter, 0x720, None),  # Instrument Panel Cluster (IPC)
+    (Ecu.shiftByWire, 0x732, None),       # Gear Shift Module (GSM)
+    (Ecu.debug, 0x7d0, None),             # Accessory Protocol Interface Module (APIM)
   ],
 )
