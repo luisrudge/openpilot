@@ -19,6 +19,10 @@ class CarState(CarStateBase):
 
     self.vehicle_sensors_valid = False
 
+  @staticmethod
+  def get_lca_msg(CP):
+    return "LateralMotionControl2" if CP.carFingerprint in CANFD_CAR else "LateralMotionControl"
+
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
 
@@ -100,6 +104,7 @@ class CarState(CarStateBase):
     # Stock values from IPMA so that we can retain some stock functionality
     self.acc_tja_status_stock_values = cp_cam.vl["ACCDATA_3"]
     self.lkas_status_stock_values = cp_cam.vl["IPMA_Data"]
+    self.lca_stock_values = cp_cam.vl[CarState.get_lca_msg(self.CP)]
 
     return ret
 
@@ -153,6 +158,7 @@ class CarState(CarStateBase):
       ("ACCDATA_2", 50),
       ("ACCDATA_3", 5),
       ("IPMA_Data", 1),
+      (CarState.get_lca_msg(CP), 20),
     ]
 
     if CP.enableBsm and CP.carFingerprint in CANFD_CAR:
