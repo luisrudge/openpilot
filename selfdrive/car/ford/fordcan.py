@@ -1,5 +1,4 @@
 from cereal import car
-from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import CanBusBase
 
 HUDControl = car.CarControl.HUDControl
@@ -76,6 +75,10 @@ def create_lat_ctl_msg(packer, CAN: CanBus, lat_active: bool, curvature: float, 
   else:
     mode = 0
 
+  # override openpilot curvature if stock system sending data
+  if stock_values["LatCtlPathOffst_L_Actl"] != 0 and stock_values["LatCtlCurv_No_Actl"] != 0 and stock_values["LatCtlCurv_NoRate_Actl"] != 0:
+    curvature = stock_values["LatCtlCurv_No_Actl"]
+
   values = {
     "LatCtlRng_L_Max": stock_values["LatCtlRng_L_Max"],                 # Unknown [0|126] meter
     "HandsOffCnfm_B_Rq": 0,                                             # Unknown: 0=Inactive, 1=Active [0|1]
@@ -88,7 +91,7 @@ def create_lat_ctl_msg(packer, CAN: CanBus, lat_active: bool, curvature: float, 
     "LatCtlPathOffst_L_Actl": stock_values["LatCtlPathOffst_L_Actl"],   # Path offset [-5.12|5.11] meter
     "LatCtlPath_An_Actl": stock_values["LatCtlPath_An_Actl"],           # Path angle [-0.5|0.5235] radians
     "LatCtlCurv_NoRate_Actl": stock_values["LatCtlCurv_NoRate_Actl"],   # Curvature rate [-0.001024|0.00102375] 1/meter^2
-    "LatCtlCurv_No_Actl": clip(curvature, -0.02, 0.02094),              # Curvature [-0.02|0.02094] 1/meter
+    "LatCtlCurv_No_Actl": curvature,                                    # Curvature [-0.02|0.02094] 1/meter
   }
   return packer.make_can_msg("LateralMotionControl", CAN.main, values)
 
