@@ -11,3 +11,7 @@ if [ -z "$AGNOS_VERSION" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+
+export FINGERPRINT="OPEL CORSA F"
+# can ignition
+export STARTED=1
