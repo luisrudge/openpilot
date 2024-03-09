@@ -14,15 +14,15 @@ class CarState(CarStateBase):
     ret = car.CarState.new_message()
 
     # car speed
-    # TODO: confirm which wheel is which
     ret.wheelSpeeds = self.get_wheel_speeds(
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_1'],
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_2'],
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_3'],
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_4'],
+      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_FL'],
+      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_FR'],
+      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_RL'],
+      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_RR'],
     )
     ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]) * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
+    ret.yawRate = cp.vl['DYNAMICS']['YAW_RATE'] * CV.DEG_TO_RAD
     ret.standstill = False  # TODO
 
     # gas
@@ -30,13 +30,13 @@ class CarState(CarStateBase):
     ret.gasPressed = ret.gas > 1e-6  # TODO
 
     # brake
-    ret.brake = 0  # TODO
-    ret.brakePressed = bool(cp.vl['POWERTRAIN']['BRAKE_PRESSED'])
-    ret.parkingBrake = bool(cp.vl['BODY']['HANDBRAKE'])  # TODO: check e-brake
+    ret.brake = cp.vl['DYNAMICS']['BRAKE_PRESSURE'] / 1500.
+    ret.brakePressed = bool(cp.vl['BODY']['BRAKE_PRESSED'])
+    ret.parkingBrake = bool(cp.vl['BODY']['PARKING_BRAKE'])  # TODO: check e-brake
 
     # steering wheel
-    ret.steeringAngleDeg = cp.vl['STEERING']['ANGLE']
-    ret.steeringRateDeg = cp.vl['STEERING']['RATE']  # TODO: check units
+    ret.steeringAngleDeg = cp.vl['STEERING_ALT']['ANGLE']
+    ret.steeringRateDeg = cp.vl['STEERING_ALT']['RATE'] * cp.vl['STEERING_ALT']['RATE_SIGN']  # TODO: check units
     ret.steeringTorque = cp.vl['STEERING']['DRIVER_TORQUE']  # TODO: check units
     ret.steeringPressed = self.update_steering_pressed(abs(ret.steeringTorque) > CarControllerParams.STEER_DRIVER_ALLOWANCE, 5)  # TODO: adjust threshold
     ret.steerFaultTemporary = 0  # TODO
@@ -81,8 +81,8 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     messages = [
       ('WHEEL_SPEEDS', 50),
+      ('DYNAMICS', 100),
       ('DRIVER', 10),
-      ('POWERTRAIN', 100),
       ('BODY', 20),
       ('BODY_2', 50),
       ('STEERING_COLUMN', 10),
