@@ -1,9 +1,9 @@
 from cereal import car
-from openpilot.common.numpy_fast import clip
 from opendbc.can.packer import CANPacker
+from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import apply_std_steer_angle_limits
 from openpilot.selfdrive.car.ford import fordcan
-from openpilot.selfdrive.car.ford.values import CANFD_CAR, CarControllerParams
+from openpilot.selfdrive.car.ford.values import CarControllerParams, FordFlags
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 
@@ -70,10 +70,10 @@ class CarController(CarControllerBase):
 
       self.apply_curvature_last = apply_curvature
 
-      if self.CP.carFingerprint in CANFD_CAR:
+      if self.CP.flags & FordFlags.CANFD:
         # TODO: extended mode
         mode = 1 if CC.latActive else 0
-        counter = (self.frame // CarControllerParams.STEER_STEP) % 0xF
+        counter = (self.frame // CarControllerParams.STEER_STEP) % 0x10
         can_sends.append(fordcan.create_lat_ctl2_msg(self.packer, self.CAN, mode, 0., 0., -apply_curvature, 0., counter))
       else:
         can_sends.append(fordcan.create_lat_ctl_msg(self.packer, self.CAN, CC.latActive, -apply_curvature, CS.lca_stock_values))
