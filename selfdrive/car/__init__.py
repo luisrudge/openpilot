@@ -284,12 +284,12 @@ class PlatformConfig(Freezable):
     car_infos = self.car_info if isinstance(self.car_info, list) else [self.car_info]
     self.car_info = []
     for car_info in car_infos:
-      if isinstance(car_info.electrification, tuple):
-        for level in car_info.electrification:
-          model = f"{car_info.model} {ElectrificationLevelNames.get(level, '')}".rstrip()
-          self.car_info.append(replace(car_info, name=f"{car_info.make} {model} {car_info.years}", footnotes=list(car_info.footnotes)))
-      else:
+      if not isinstance(car_info.electrification, tuple):
         self.car_info.append(car_info)
+        continue
+      for level in car_info.electrification:
+        model = f"{car_info.model} {ElectrificationLevelNames.get(level, '')}".rstrip()
+        self.car_info.append(replace(car_info, name=f"{car_info.make} {model} {car_info.years}", footnotes=list(car_info.footnotes)))
 
   def __post_init__(self):
     self.init()
