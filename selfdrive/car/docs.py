@@ -2,7 +2,6 @@
 import argparse
 import os
 from collections import defaultdict
-from dataclasses import replace
 from enum import Enum
 
 import jinja2
@@ -11,7 +10,7 @@ from natsort import natsorted
 from cereal import car
 from openpilot.common.basedir import BASEDIR
 from openpilot.selfdrive.car import gen_empty_fingerprint
-from openpilot.selfdrive.car.docs_definitions import CarInfo, Column, CommonFootnote, ElectrificationLevelNames, PartType
+from openpilot.selfdrive.car.docs_definitions import CarInfo, Column, CommonFootnote, PartType
 from openpilot.selfdrive.car.car_helpers import interfaces, get_interface_attr
 from openpilot.selfdrive.car.values import PLATFORMS
 
@@ -31,12 +30,6 @@ def get_all_car_info() -> list[CarInfo]:
   all_car_info: list[CarInfo] = []
   footnotes = get_all_footnotes()
 
-  def add_car_info(car_info: CarInfo, CP: car.CarParams) -> None:
-    if not hasattr(car_info, "row"):
-      car_info.init_make(CP)
-      car_info.init(CP, footnotes)
-    all_car_info.append(car_info)
-
   for model, platform in PLATFORMS.items():
     car_info = platform.config.car_info
     # If available, uses experimental longitudinal limits for the docs
@@ -51,13 +44,10 @@ def get_all_car_info() -> list[CarInfo]:
       car_info = [car_info,]
 
     for _car_info in car_info:
-      if isinstance(_car_info.electrification, tuple):
-        # Add new entries for each electrification level
-        for level in _car_info.electrification:
-          model = f"{_car_info.model} {ElectrificationLevelNames.get(level)}".rstrip()
-          add_car_info(replace(_car_info, name=f"{_car_info.make} {model} {_car_info.years}", footnotes=list(_car_info.footnotes)), CP)
-      else:
-        add_car_info(_car_info, CP)
+      if not hasattr(_car_info, "row"):
+        _car_info.init_make(CP)
+        _car_info.init(CP, footnotes)
+      all_car_info.append(_car_info)
 
   # Sort cars by make and model + year
   sorted_cars: list[CarInfo] = natsorted(all_car_info, key=lambda car: car.name.lower())

@@ -9,7 +9,7 @@ import capnp
 from cereal import car
 from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.utils import Freezable
-from openpilot.selfdrive.car.docs_definitions import CarInfo
+from openpilot.selfdrive.car.docs_definitions import CarInfo, ElectrificationLevelNames
 
 
 # kg of standard extra cargo to count for drive, gas, etc...
@@ -279,7 +279,17 @@ class PlatformConfig(Freezable):
     return replace(self, **kwargs)
 
   def init(self):
-    pass
+    if self.car_info is None:
+      return
+    car_infos = self.car_info if isinstance(self.car_info, list) else [self.car_info]
+    self.car_info = []
+    for car_info in car_infos:
+      if isinstance(car_info.electrification, tuple):
+        for level in car_info.electrification:
+          model = f"{car_info.model} {ElectrificationLevelNames.get(level, '')}".rstrip()
+          self.car_info.append(replace(car_info, name=f"{car_info.make} {model} {car_info.years}", footnotes=list(car_info.footnotes)))
+      else:
+        self.car_info.append(car_info)
 
   def __post_init__(self):
     self.init()

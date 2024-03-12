@@ -195,7 +195,6 @@ def get_footnotes(footnotes: list[Enum], column: Column) -> list[Enum]:
 ElectrificationLevel = Literal["ICE", "HEV", "PHEV", "BEV", "FCEV"]
 
 ElectrificationLevelNames: dict[ElectrificationLevel, str] = {
-  "ICE": "",
   "HEV": "Hybrid",
   "PHEV": "Plug-in Hybrid",
   "BEV": "Electric",
