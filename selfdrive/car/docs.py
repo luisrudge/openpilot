@@ -11,7 +11,7 @@ from natsort import natsorted
 from cereal import car
 from openpilot.common.basedir import BASEDIR
 from openpilot.selfdrive.car import gen_empty_fingerprint
-from openpilot.selfdrive.car.docs_definitions import CarInfo, Column, CommonFootnote, PartType
+from openpilot.selfdrive.car.docs_definitions import CarInfo, Column, CommonFootnote, ElectrificationLevelNames, PartType
 from openpilot.selfdrive.car.car_helpers import interfaces, get_interface_attr
 from openpilot.selfdrive.car.values import PLATFORMS
 
@@ -45,22 +45,12 @@ def get_all_car_info() -> list[CarInfo]:
 
     for _car_info in car_info:
       if isinstance(_car_info.electrification, tuple):
-        for electrification in _car_info.electrification:
-          make, model, years = _car_info.make, _car_info.model, _car_info.years
-
-          electrification_level = {
-            "ICE": "",
-            "HEV": " Hybrid",
-            "PHEV": " Plug-in Hybrid",
-            "BEV": " Electric",
-          }.get(electrification)
-          if electrification_level is None:
-            raise ValueError(f"Unknown electrification level: {electrification}")
-          model += electrification_level
-
-          __car_info = replace(_car_info, name=f"{make} {model} {years}", footnotes=list(_car_info.footnotes))
-          __car_info.init_make(CP)
-          __car_info.init(CP, footnotes)
+        for level in _car_info.electrification:
+          model = f"{_car_info.model} {ElectrificationLevelNames.get(level)}".rstrip()
+          __car_info = replace(_car_info, name=f"{_car_info.make} {model} {_car_info.years}", footnotes=list(_car_info.footnotes))
+          if not hasattr(__car_info, "row"):
+            __car_info.init_make(CP)
+            __car_info.init(CP, footnotes)
           all_car_info.append(__car_info)
       else:
         if not hasattr(_car_info, "row"):
