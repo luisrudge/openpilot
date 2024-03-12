@@ -97,7 +97,7 @@ class CAR(Platforms):
   )
   VOLT = GMPlatformConfig(
     "CHEVROLET VOLT PREMIER 2017",
-    GMCarInfo("Chevrolet Volt 2017-18", min_enable_speed=0, video_link="https://youtu.be/QeMCN_4TFfQ"),
+    GMCarInfo("Chevrolet Volt 2017-18", electrification="BEV", min_enable_speed=0, video_link="https://youtu.be/QeMCN_4TFfQ"),
     GMCarSpecs(mass=1607, wheelbase=2.69, steerRatio=17.7, centerToFrontRatio=0.45, tireStiffnessFactor=0.469),
   )
   CADILLAC_ATS = GMPlatformConfig(
@@ -143,8 +143,8 @@ class CAR(Platforms):
   BOLT_EUV = GMPlatformConfig(
     "CHEVROLET BOLT EUV 2022",
     [
-      GMCarInfo("Chevrolet Bolt EUV 2022-23", "Premier or Premier Redline Trim without Super Cruise Package", video_link="https://youtu.be/xvwzGMUA210"),
-      GMCarInfo("Chevrolet Bolt EV 2022-23", "2LT Trim with Adaptive Cruise Control Package"),
+      GMCarInfo("Chevrolet Bolt EUV 2022-23", "Premier or Premier Redline Trim without Super Cruise Package", electrification="BEV", video_link="https://youtu.be/xvwzGMUA210"),
+      GMCarInfo("Chevrolet Bolt EV 2022-23", "2LT Trim with Adaptive Cruise Control Package", electrification="BEV"),
     ],
     GMCarSpecs(mass=1669, wheelbase=2.63779, steerRatio=16.8, centerToFrontRatio=0.4, tireStiffnessFactor=1.0),
   )

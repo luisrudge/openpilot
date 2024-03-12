@@ -44,7 +44,7 @@ class CAR(Platforms):
   )
   LEAF = NissanPlaformConfig(
     "NISSAN LEAF 2018",
-    NissanCarInfo("Nissan Leaf 2018-23", video_link="https://youtu.be/vaMbtAh_0cY"),
+    NissanCarInfo("Nissan Leaf 2018-23", electrification="BEV", video_link="https://youtu.be/vaMbtAh_0cY"),
     NissanCarSpecs(mass=1610, wheelbase=2.705),
     dbc_dict('nissan_leaf_2018_generated', None),
   )

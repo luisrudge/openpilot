@@ -34,17 +34,17 @@ class CAR(Platforms):
   # Chrysler
   PACIFICA_2017_HYBRID = ChryslerPlatformConfig(
     "CHRYSLER PACIFICA HYBRID 2017",
-    ChryslerCarInfo("Chrysler Pacifica Hybrid 2017"),
+    ChryslerCarInfo("Chrysler Pacifica Hybrid 2017", electrification="HEV"),
     ChryslerCarSpecs(mass=2242., wheelbase=3.089, steerRatio=16.2),
   )
   PACIFICA_2018_HYBRID = ChryslerPlatformConfig(
     "CHRYSLER PACIFICA HYBRID 2018",
-    ChryslerCarInfo("Chrysler Pacifica Hybrid 2018"),
+    ChryslerCarInfo("Chrysler Pacifica Hybrid 2018", electrification="HEV"),
     PACIFICA_2017_HYBRID.specs,
   )
   PACIFICA_2019_HYBRID = ChryslerPlatformConfig(
     "CHRYSLER PACIFICA HYBRID 2019",
-    ChryslerCarInfo("Chrysler Pacifica Hybrid 2019-23"),
+    ChryslerCarInfo("Chrysler Pacifica Hybrid 2019-23", electrification="HEV"),
     PACIFICA_2017_HYBRID.specs,
   )
   PACIFICA_2018 = ChryslerPlatformConfig(

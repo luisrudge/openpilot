@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-from collections import defaultdict
-import jinja2
 import os
+from collections import defaultdict
+from dataclasses import replace
 from enum import Enum
+
+import jinja2
 from natsort import natsorted
 
 from cereal import car
@@ -42,10 +44,35 @@ def get_all_car_info() -> list[CarInfo]:
       car_info = [car_info,]
 
     for _car_info in car_info:
-      if not hasattr(_car_info, "row"):
-        _car_info.init_make(CP)
-        _car_info.init(CP, footnotes)
-      all_car_info.append(_car_info)
+      if isinstance(_car_info.electrification, tuple):
+        for electrification in _car_info.electrification:
+          make, model, years = _car_info.make, _car_info.model, _car_info.years
+
+          if electrification == "ICE":
+            pass
+          elif electrification == "HEV":
+            model += " Hybrid"
+          elif electrification == "PHEV":
+            model += " Plug-in Hybrid"
+          elif electrification == "BEV":
+            model += " Electric"
+          else:
+            raise ValueError(f"Unknown electrification level: {electrification}")
+
+          # print(_car_info.name, f"{make} {model} {years}")
+          __car_info = replace(_car_info, name=f"{make} {model} {years}")
+
+          __car_info.init_make(CP)
+          __car_info.init(CP, footnotes)
+
+          __car_info.footnotes = list(set(_car_info.footnotes))
+
+          all_car_info.append(__car_info)
+      else:
+        if not hasattr(_car_info, "row"):
+          _car_info.init_make(CP)
+          _car_info.init(CP, footnotes)
+        all_car_info.append(_car_info)
 
   # Sort cars by make and model + year
   sorted_cars: list[CarInfo] = natsorted(all_car_info, key=lambda car: car.name.lower())

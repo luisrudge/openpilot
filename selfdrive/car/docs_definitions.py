@@ -1,8 +1,9 @@
+import copy
 import re
 from collections import namedtuple
-import copy
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
 
 from cereal import car
 from openpilot.common.conversions import Conversions as CV
@@ -191,6 +192,9 @@ def get_footnotes(footnotes: list[Enum], column: Column) -> list[Enum]:
   return [fn for fn in footnotes if fn.value.column == column]
 
 
+ElectrificationLevel = Literal["ICE", "HEV", "PHEV", "BEV"]
+
+
 # TODO: store years as a list
 def get_year_list(years):
   years_list = []
@@ -234,6 +238,8 @@ class CarInfo:
   # the minimum compatibility requirements for this model, regardless
   # of market. can be a package, trim, or list of features
   requirements: str | None = None
+
+  electrification: ElectrificationLevel | tuple[ElectrificationLevel, ...] = "ICE"
 
   video_link: str | None = None
   footnotes: list[Enum] = field(default_factory=list)
