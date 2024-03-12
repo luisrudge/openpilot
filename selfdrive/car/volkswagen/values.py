@@ -182,7 +182,7 @@ class CAR(Platforms):
     [
       VWCarInfo("Volkswagen Arteon 2018-23", video_link="https://youtu.be/FAomFKPFlDA"),
       VWCarInfo("Volkswagen Arteon R 2020-23", video_link="https://youtu.be/FAomFKPFlDA"),
-      VWCarInfo("Volkswagen Arteon eHybrid 2020-23", video_link="https://youtu.be/FAomFKPFlDA"),
+      VWCarInfo("Volkswagen Arteon eHybrid 2020-23", electrification="HEV", video_link="https://youtu.be/FAomFKPFlDA"),
       VWCarInfo("Volkswagen CC 2018-22", video_link="https://youtu.be/FAomFKPFlDA"),
     ],
     VolkswagenCarSpecs(mass=1733, wheelbase=2.84),
@@ -210,17 +210,17 @@ class CAR(Platforms):
     "VOLKSWAGEN CRAFTER 2ND GEN",  # Chassis SY/SZ
     [
       VWCarInfo("Volkswagen Crafter 2017-23", video_link="https://youtu.be/4100gLeabmo"),
-      VWCarInfo("Volkswagen e-Crafter 2018-23", video_link="https://youtu.be/4100gLeabmo"),
+      VWCarInfo("Volkswagen e-Crafter 2018-23", electrification="BEV", video_link="https://youtu.be/4100gLeabmo"),
       VWCarInfo("Volkswagen Grand California 2019-23", video_link="https://youtu.be/4100gLeabmo"),
       VWCarInfo("MAN TGE 2017-23", video_link="https://youtu.be/4100gLeabmo"),
-      VWCarInfo("MAN eTGE 2020-23", video_link="https://youtu.be/4100gLeabmo"),
+      VWCarInfo("MAN eTGE 2020-23", electrification="BEV", video_link="https://youtu.be/4100gLeabmo"),
     ],
     VolkswagenCarSpecs(mass=2100, wheelbase=3.64, minSteerSpeed=50 * CV.KPH_TO_MS),
   )
   GOLF_MK7 = VolkswagenMQBPlatformConfig(
     "VOLKSWAGEN GOLF 7TH GEN",  # Chassis 5G/AU/BA/BE
     [
-      VWCarInfo("Volkswagen e-Golf 2014-20"),
+      VWCarInfo("Volkswagen e-Golf 2014-20", electrification="BEV"),
       VWCarInfo("Volkswagen Golf 2015-20", auto_resume=False),
       VWCarInfo("Volkswagen Golf Alltrack 2015-19", auto_resume=False),
       VWCarInfo("Volkswagen Golf GTD 2015-20"),
@@ -283,7 +283,7 @@ class CAR(Platforms):
     "VOLKSWAGEN TIGUAN 2ND GEN",  # Chassis AD/BW
     [
       VWCarInfo("Volkswagen Tiguan 2018-24"),
-      VWCarInfo("Volkswagen Tiguan eHybrid 2021-23"),
+      VWCarInfo("Volkswagen Tiguan eHybrid 2021-23", electrification="PHEV"),
     ],
     VolkswagenCarSpecs(mass=1715, wheelbase=2.74),
   )
@@ -309,7 +309,7 @@ class CAR(Platforms):
     "AUDI A3 3RD GEN",  # Chassis 8V/FF
     [
       VWCarInfo("Audi A3 2014-19"),
-      VWCarInfo("Audi A3 Sportback e-tron 2017-18"),
+      VWCarInfo("Audi A3 Sportback e-tron 2017-18", electrification="BEV"),
       VWCarInfo("Audi RS3 2018"),
       VWCarInfo("Audi S3 2015-17"),
     ],
