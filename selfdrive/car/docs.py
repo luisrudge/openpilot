@@ -48,25 +48,20 @@ def get_all_car_info() -> list[CarInfo]:
         for electrification in _car_info.electrification:
           make, model, years = _car_info.make, _car_info.model, _car_info.years
 
-          if electrification == "ICE":
-            pass
-          elif electrification == "HEV":
-            model += " Hybrid"
-          elif electrification == "PHEV":
-            model += " Plug-in Hybrid"
-          elif electrification == "BEV":
-            model += " Electric"
-          else:
+          electrification_level = {
+            "ICE": "",
+            "HEV": " Hybrid",
+            "PHEV": " Plug-in Hybrid",
+            "BEV": " Electric",
+          }.get(electrification)
+          if electrification_level is None:
             raise ValueError(f"Unknown electrification level: {electrification}")
+          model += electrification_level
 
-          # print(_car_info.name, f"{make} {model} {years}")
           __car_info = replace(_car_info, name=f"{make} {model} {years}")
-
           __car_info.init_make(CP)
           __car_info.init(CP, footnotes)
-
-          __car_info.footnotes = list(set(_car_info.footnotes))
-
+          __car_info.footnotes = list(set(_car_info.footnotes))  # FIXME: why do they have duplicates?
           all_car_info.append(__car_info)
       else:
         if not hasattr(_car_info, "row"):
