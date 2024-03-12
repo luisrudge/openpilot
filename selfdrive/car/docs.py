@@ -58,10 +58,9 @@ def get_all_car_info() -> list[CarInfo]:
             raise ValueError(f"Unknown electrification level: {electrification}")
           model += electrification_level
 
-          __car_info = replace(_car_info, name=f"{make} {model} {years}")
+          __car_info = replace(_car_info, name=f"{make} {model} {years}", footnotes=list(_car_info.footnotes))
           __car_info.init_make(CP)
           __car_info.init(CP, footnotes)
-          __car_info.footnotes = list(set(_car_info.footnotes))  # FIXME: why do they have duplicates?
           all_car_info.append(__car_info)
       else:
         if not hasattr(_car_info, "row"):
