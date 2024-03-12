@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-import os
 from collections import defaultdict
-from enum import Enum
-
 import jinja2
+import os
+from enum import Enum
 from natsort import natsorted
 
 from cereal import car
@@ -29,7 +28,6 @@ CARS_MD_TEMPLATE = os.path.join(BASEDIR, "selfdrive", "car", "CARS_template.md")
 def get_all_car_info() -> list[CarInfo]:
   all_car_info: list[CarInfo] = []
   footnotes = get_all_footnotes()
-
   for model, platform in PLATFORMS.items():
     car_info = platform.config.car_info
     # If available, uses experimental longitudinal limits for the docs
