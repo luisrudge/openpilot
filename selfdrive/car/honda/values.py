@@ -118,9 +118,9 @@ class CAR(Platforms):
   ACCORD = HondaBoschPlatformConfig(
     "HONDA ACCORD 2018",
     [
-      HondaCarInfo("Honda Accord 2018-22", "All", electrification=("ICE", "HEV"), video_link="https://www.youtube.com/watch?v=mrUwlj3Mi58",
-                   min_steer_speed=3. * CV.MPH_TO_MS),
+      HondaCarInfo("Honda Accord 2018-22", "All", video_link="https://www.youtube.com/watch?v=mrUwlj3Mi58", min_steer_speed=3. * CV.MPH_TO_MS),
       HondaCarInfo("Honda Inspire 2018", "All", min_steer_speed=3. * CV.MPH_TO_MS),
+      HondaCarInfo("Honda Accord Hybrid 2018-22", "All", electrification="HEV", min_steer_speed=3. * CV.MPH_TO_MS),
     ],
     # steerRatio: 11.82 is spec end-to-end
     CarSpecs(mass=3279 * CV.LB_TO_KG, wheelbase=2.83, steerRatio=16.33, centerToFrontRatio=0.39, tireStiffnessFactor=0.8467),
