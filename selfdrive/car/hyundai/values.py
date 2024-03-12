@@ -417,7 +417,7 @@ class CAR(Platforms):
   )
   KIA_NIRO_EV_2ND_GEN = HyundaiCanFDPlatformConfig(
     "KIA NIRO EV 2ND GEN",
-    HyundaiCarInfo("Kia Niro EV 2023", "All", car_parts=CarParts.common([CarHarness.hyundai_a])),
+    HyundaiCarInfo("Kia Niro EV 2023", "All", electrification="BEV", car_parts=CarParts.common([CarHarness.hyundai_a])),
     KIA_NIRO_EV.specs,
     flags=HyundaiFlags.EV,
   )
@@ -436,8 +436,8 @@ class CAR(Platforms):
   KIA_NIRO_PHEV_2022 = HyundaiPlatformConfig(
     "KIA NIRO PLUG-IN HYBRID 2022",
     [
-      HyundaiCarInfo("Kia Niro Plug-in Hybrid 2021", "All", electrification="HEV", car_parts=CarParts.common([CarHarness.hyundai_d])),
-      HyundaiCarInfo("Kia Niro Plug-in Hybrid 2022", "All", electrification="HEV", car_parts=CarParts.common([CarHarness.hyundai_f])),
+      HyundaiCarInfo("Kia Niro Plug-in Hybrid 2021", "All", electrification="PHEV", car_parts=CarParts.common([CarHarness.hyundai_d])),
+      HyundaiCarInfo("Kia Niro Plug-in Hybrid 2022", "All", electrification="PHEV", car_parts=CarParts.common([CarHarness.hyundai_f])),
     ],
     KIA_NIRO_EV.specs,
     flags=HyundaiFlags.HYBRID | HyundaiFlags.MANDO_RADAR,
@@ -542,9 +542,9 @@ class CAR(Platforms):
   KIA_EV6 = HyundaiCanFDPlatformConfig(
     "KIA EV6 2022",
     [
-      HyundaiCarInfo("Kia EV6 (Southeast Asia only) 2022-23", "All", car_parts=CarParts.common([CarHarness.hyundai_p])),
-      HyundaiCarInfo("Kia EV6 (without HDA II) 2022-23", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_l])),
-      HyundaiCarInfo("Kia EV6 (with HDA II) 2022-23", "Highway Driving Assist II", car_parts=CarParts.common([CarHarness.hyundai_p]))
+      HyundaiCarInfo("Kia EV6 (Southeast Asia only) 2022-23", "All", electrification="BEV", car_parts=CarParts.common([CarHarness.hyundai_p])),
+      HyundaiCarInfo("Kia EV6 (without HDA II) 2022-23", "Highway Driving Assist", electrification="BEV", car_parts=CarParts.common([CarHarness.hyundai_l])),
+      HyundaiCarInfo("Kia EV6 (with HDA II) 2022-23", "Highway Driving Assist II", electrification="BEV", car_parts=CarParts.common([CarHarness.hyundai_p]))
     ],
     CarSpecs(mass=2055, wheelbase=2.9, steerRatio=16, tireStiffnessFactor=0.65),
     flags=HyundaiFlags.EV,
@@ -563,8 +563,8 @@ class CAR(Platforms):
   GENESIS_GV60_EV_1ST_GEN = HyundaiCanFDPlatformConfig(
     "GENESIS GV60 ELECTRIC 1ST GEN",
     [
-      HyundaiCarInfo("Genesis GV60 (Advanced Trim) 2023", "All", car_parts=CarParts.common([CarHarness.hyundai_a])),
-      HyundaiCarInfo("Genesis GV60 (Performance Trim) 2023", "All", car_parts=CarParts.common([CarHarness.hyundai_k])),
+      HyundaiCarInfo("Genesis GV60 (Advanced Trim) 2023", "All", electrification="BEV", car_parts=CarParts.common([CarHarness.hyundai_a])),
+      HyundaiCarInfo("Genesis GV60 (Performance Trim) 2023", "All", electrification="BEV", car_parts=CarParts.common([CarHarness.hyundai_k])),
     ],
     CarSpecs(mass=2205, wheelbase=2.9, steerRatio=12.6),  # steerRatio: https://www.motor1.com/reviews/586376/2023-genesis-gv60-first-drive/#:~:text=Relative%20to%20the%20related%20Ioniq,5%2FEV6%27s%2014.3%3A1.
     flags=HyundaiFlags.EV,

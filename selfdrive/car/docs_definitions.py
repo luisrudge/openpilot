@@ -192,7 +192,7 @@ def get_footnotes(footnotes: list[Enum], column: Column) -> list[Enum]:
   return [fn for fn in footnotes if fn.value.column == column]
 
 
-ElectrificationLevel = Literal["ICE", "HEV", "PHEV", "BEV"]
+ElectrificationLevel = Literal["ICE", "HEV", "PHEV", "BEV", "FCEV"]
 
 ElectrificationLevelNames: dict[ElectrificationLevel, str] = {
   "ICE": "",
