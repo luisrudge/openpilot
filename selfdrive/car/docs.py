@@ -47,14 +47,16 @@ def get_all_car_info() -> list[CarInfo]:
       if isinstance(_car_info.electrification, tuple):
         for level in _car_info.electrification:
           model = f"{_car_info.model} {ElectrificationLevelNames.get(level)}".rstrip()
-          all_car_info.append(replace(_car_info, name=f"{_car_info.make} {model} {_car_info.years}", footnotes=list(_car_info.footnotes)))
+          __car_info = replace(_car_info, name=f"{_car_info.make} {model} {_car_info.years}", footnotes=list(_car_info.footnotes))
+          if not hasattr(__car_info, "row"):
+            __car_info.init_make(CP)
+            __car_info.init(CP, footnotes)
+          all_car_info.append(__car_info)
       else:
+        if not hasattr(_car_info, "row"):
+          _car_info.init_make(CP)
+          _car_info.init(CP, footnotes)
         all_car_info.append(_car_info)
-
-  for car_info in all_car_info:
-    if not hasattr(car_info, "row"):
-      car_info.init_make(CP)
-      car_info.init(CP, footnotes)
 
   # Sort cars by make and model + year
   sorted_cars: list[CarInfo] = natsorted(all_car_info, key=lambda car: car.name.lower())
