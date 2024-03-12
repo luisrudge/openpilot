@@ -64,6 +64,17 @@ class TestCarDocs(unittest.TestCase):
           if "rav4" in tokens:
             self.assertIn("RAV4", car.model, "Use correct capitalization")
 
+  def test_electrification_level(self):
+    for car in self.all_cars:
+      with self.subTest(car=car):
+        model = car.model.lower()
+        if "plug-in hybrid" in model:
+          self.assertIn("PHEV", car.electrification, "Add `PHEV` to electrification level")
+        elif "hybrid" in model:
+          self.assertIn("HEV", car.electrification, "Add `HEV` to electrification level")
+        elif "electric" in model or "ev" in model:
+          self.assertIn("BEV", car.electrification, "Add `BEV` to electrification level")
+
   def test_torque_star(self):
     # Asserts brand-specific assumptions around steering torque star
     for car in self.all_cars:
