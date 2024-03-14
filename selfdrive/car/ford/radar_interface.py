@@ -164,7 +164,7 @@ class RadarInterface(RadarInterfaceBase):
       # camera doesn't notify of track switches, so do it manually
       # TODO: refactor this to radard if more radars behave this way
       pt = self.pts.get(0)
-      if pt and abs(pt.vRel - vRel) > 2 or abs(pt.dRel - dRel) > 5:
+      if pt and (abs(pt.vRel - vRel) > 2 or abs(pt.dRel - dRel) > 5):
         self.track_id += 1
         pt.trackId = self.track_id
 
