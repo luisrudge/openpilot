@@ -2,6 +2,7 @@ from math import cos, sin
 from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.params import Params
 from openpilot.selfdrive.car.ford.fordcan import CanBus
 from openpilot.selfdrive.car.ford.values import DBC, RADAR
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
@@ -40,10 +41,12 @@ class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
 
+    RadarOverride = Params().get('RadarOverride', encoding='utf-8')
+
     self.updated_messages = set()
     self.track_id = 0
-    self.radar = DBC[CP.carFingerprint]['radar']
-    if self.radar is None or CP.radarUnavailable:
+    self.radar = RadarOverride or DBC[CP.carFingerprint]['radar']
+    if self.radar is None or (CP.radarUnavailable and not RadarOverride):
       self.rcp = None
     elif self.radar == RADAR.DELPHI_ESR:
       self.rcp = _create_delphi_esr_radar_can_parser(CP)
