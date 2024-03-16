@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from cereal import car
 from openpilot.selfdrive.car import CarSpecs, dbc_dict, PlatformConfig, Platforms
-from openpilot.selfdrive.car.docs_definitions import CarHarness, CarInfo, CarParts
+from openpilot.selfdrive.car.docs_definitions import CarDocs, CarHarness, CarParts
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig
 
 Ecu = car.CarParams.Ecu
@@ -22,7 +22,7 @@ class CarControllerParams:
 
 
 @dataclass
-class OpelCarInfo(CarInfo):
+class OpelCarDocs(CarDocs):
   package: str = "Adaptive Cruise Control"
   car_parts: CarParts = field(default_factory=CarParts.common([CarHarness.psa_a]))
 
@@ -30,7 +30,7 @@ class OpelCarInfo(CarInfo):
 class CAR(Platforms):
   OPEL_CORSA_F = PlatformConfig(
     "OPEL CORSA F",
-    OpelCarInfo("Vauxhall Corsa 2020"),
+    [OpelCarDocs("Vauxhall Corsa 2020")],
     CarSpecs(mass=1200, wheelbase=2.538, steerRatio=15.0),  # TODO: check steer ratio
     dbc_dict=dbc_dict('psa_cmp', None),
   )
