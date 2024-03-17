@@ -1,7 +1,6 @@
 from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.numpy_fast import mean
 from openpilot.selfdrive.car.psa.values import DBC, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarStateBase
 
@@ -15,14 +14,15 @@ class CarState(CarStateBase):
 
     # car speed
     ret.wheelSpeeds = self.get_wheel_speeds(
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_FL'],
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_FR'],
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_RL'],
-      cp.vl['WHEEL_SPEEDS']['WHEEL_SPEED_RR'],
+      cp.vl['Dyn4_FRE']['P263_VehV_VPsvValWhlFrtL'],
+      cp.vl['Dyn4_FRE']['P264_VehV_VPsvValWhlFrtR'],
+      cp.vl['Dyn4_FRE']['P265_VehV_VPsvValWhlBckL'],
+      cp.vl['Dyn4_FRE']['P266_VehV_VPsvValWhlBckR'],
     )
-    ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]) * CV.KPH_TO_MS
+    # ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]) * CV.KPH_TO_MS
+    ret.vEgoRaw = cp.vl['Dyn_ABR']['P010_Com_v']  # or cp.vl['Dyn_Veh']['P060_vECU']
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    ret.yawRate = cp.vl['DYNAMICS']['YAW_RATE'] * CV.DEG_TO_RAD
+    ret.yawRate = cp.vl['Dyn2_FRE']['YAW_RATE'] * CV.DEG_TO_RAD
     ret.standstill = False  # TODO
 
     # gas
@@ -30,9 +30,9 @@ class CarState(CarStateBase):
     ret.gasPressed = ret.gas > 1e-6  # TODO
 
     # brake
-    ret.brake = cp.vl['DYNAMICS']['BRAKE_PRESSURE'] / 1500.
-    ret.brakePressed = bool(cp.vl['BODY']['BRAKE_PRESSED'])
-    ret.parkingBrake = bool(cp.vl['BODY']['PARKING_BRAKE'])  # TODO: check e-brake
+    ret.brake = cp.vl['Dyn2_FRE']['BRAKE_PRESSURE'] / 1500.
+    ret.brakePressed = bool(cp.vl['Dat_BSI']['P013_MainBrake'])
+    ret.parkingBrake = bool(cp.vl['Dat_BSI']['PARKING_BRAKE'])  # TODO: check e-brake
 
     # steering wheel
     ret.steeringAngleDeg = cp.vl['STEERING_ALT']['ANGLE']
@@ -54,8 +54,8 @@ class CarState(CarStateBase):
     # gear
     # TODO: automatic transmission gear
     if self.CP.transmissionType == TransmissionType.manual:
-      ret.clutchPressed = bool(cp.vl['BODY_2']['CLUTCH_PRESSED'])
-      if bool(cp.vl['BODY']['REVERSE']):
+      ret.clutchPressed = bool(cp.vl['Dyn2_CMM']['P091_ConvCD_stDebVal'])
+      if bool(cp.vl['Dat_BSI']['P103_Com_bRevGear']):
         ret.gearShifter = GearShifter.reverse
       else:
         ret.gearShifter = GearShifter.drive
@@ -69,7 +69,7 @@ class CarState(CarStateBase):
     ret.rightBlinker = cp.vl['STEERING_COLUMN']['RIGHT_INDICATOR']
 
     # lock info
-    ret.doorOpen = any([cp.vl['BODY']['DRIVER_DOOR'], cp.vl['BODY']['PASSENGER_DOOR']])
+    ret.doorOpen = any([cp.vl['Dat_BSI']['DRIVER_DOOR'], cp.vl['Dat_BSI']['PASSENGER_DOOR']])
     ret.seatbeltUnlatched = cp.vl['RESTRAINTS']['DRIVER_SEATBELT'] != 2  # TODO: check LHD
 
     # stock signals from camera
