@@ -61,8 +61,8 @@ class CarState(CarStateBase):
         ret.gearShifter = GearShifter.drive
 
     # TODO: safety
-    ret.stockFcw = 0
-    ret.stockAeb = 0
+    ret.stockFcw = False
+    ret.stockAeb = False
 
     # button presses
     blinker = cp_adas.vl['HS2_DAT7_BSI_612']['CDE_CLG_ET_HDC']
