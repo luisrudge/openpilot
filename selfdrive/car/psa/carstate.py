@@ -20,7 +20,7 @@ class CarState(CarStateBase):
       cp.vl['Dyn4_FRE']['P265_VehV_VPsvValWhlBckL'],
       cp.vl['Dyn4_FRE']['P266_VehV_VPsvValWhlBckR'],
     )
-    ret.vEgoRaw = cp.vl['Dyn_ABR']['P010_Com_v']  # also ['HS2_DYN_ABR_38D']['VITESSE_VEHICULE_ROUES']
+    ret.vEgoRaw = cp.vl['Dyn_ABR']['P010_Com_v'] * CV.KPH_TO_MS  # also ['HS2_DYN_ABR_38D']['VITESSE_VEHICULE_ROUES']
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     # ret.yawRate = cp.vl['Dyn2_FRE']['YAW_RATE'] * CV.DEG_TO_RAD  # FIXME
     ret.standstill = False  # TODO
