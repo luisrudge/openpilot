@@ -198,7 +198,7 @@ QVariant MessageListModel::data(const QModelIndex &index, int role) const {
     switch (index.column()) {
       case Column::NAME: return item.name;
       case Column::SOURCE: return item.id.source != INVALID_SOURCE ? QString::number(item.id.source) : "N/A";
-      case Column::ADDRESS: return QString::number(item.id.address, 16);
+      case Column::ADDRESS: return "0x" + QString::number(item.id.address, 16);
       case Column::NODE: return item.node;
       case Column::FREQ: return item.id.source != INVALID_SOURCE ? getFreq(data) : "N/A";
       case Column::COUNT: return item.id.source != INVALID_SOURCE ? QString::number(data.count) : "N/A";
@@ -213,6 +213,8 @@ QVariant MessageListModel::data(const QModelIndex &index, int role) const {
     auto tooltip = item.name;
     if (msg && !msg->comment.isEmpty()) tooltip += "<br /><span style=\"color:gray;\">" + msg->comment + "</span>";
     return tooltip;
+  } else if (role == Qt::ToolTipRole && index.column() == Column::ADDRESS) {
+    return "0x" + QString::number(item.id.address, 16) + " (" + QString::number(item.id.address) + ")";
   }
   return {};
 }
