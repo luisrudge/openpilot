@@ -18,6 +18,7 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.psa)]
 
     if not docs:
+      ret.transmissionType = TransmissionType.manual
       ret.minEnableSpeed = 40 * CV.KPH_TO_MS  # 25mph, FIXME: manual transmission
     ret.minSteerSpeed = 0.  # TODO: verify
 
