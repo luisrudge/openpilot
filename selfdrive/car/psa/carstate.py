@@ -38,8 +38,8 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = cp.vl['STEERING_ALT']['RATE'] * cp.vl['STEERING_ALT']['RATE_SIGN']  # TODO: check units
     ret.steeringTorque = cp.vl['STEERING']['DRIVER_TORQUE']  # TODO: check units
     ret.steeringPressed = self.update_steering_pressed(abs(ret.steeringTorque) > CarControllerParams.STEER_DRIVER_ALLOWANCE, 5)  # TODO: adjust threshold
-    ret.steerFaultTemporary = 0  # TODO
-    ret.steerFaultPermanent = 0  # TODO
+    ret.steerFaultTemporary = False  # TODO
+    ret.steerFaultPermanent = False  # TODO
     ret.espDisabled = False  # TODO
 
     # cruise
