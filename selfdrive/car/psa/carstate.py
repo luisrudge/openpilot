@@ -42,12 +42,13 @@ class CarState(CarStateBase):
     ret.steerFaultPermanent = 0  # TODO
     ret.espDisabled = False  # TODO
 
-    # TODO: cruise state
-    ret.cruiseState.speed = 0
-    ret.cruiseState.enabled = False
-    ret.cruiseState.available = False
-    ret.cruiseState.nonAdaptive = True
-    ret.cruiseState.standstill = False
+    # cruise
+    # note: this is just for CC car not ACC right now
+    ret.cruiseState.speed = cp_adas.vl['HS2_DAT_MDD_CMD_452']['CONS_LIM_VITESSE_VEH']
+    ret.cruiseState.enabled = cp_adas.vl['HS2_DAT_MDD_CMD_452']['DDE_ACTIVATION_RVV_ACC']
+    ret.cruiseState.available = False  # TODO
+    ret.cruiseState.nonAdaptive = False  # cp_adas.vl['HS2_DAT_MDD_CMD_452']['COCKPIT_GO_ACC_REQUEST'] == 0
+    ret.cruiseState.standstill = False  # TODO
     ret.accFaulted = False
 
     # gear
@@ -94,6 +95,7 @@ class CarState(CarStateBase):
   @staticmethod
   def get_adas_can_parser(CP):
     messages = [
+      ('HS2_DAT_MDD_CMD_452', 20),
       ('HS2_DAT7_BSI_612', 10),
     ]
     return CANParser(DBC[CP.carFingerprint]['body'], messages, CanBus(CP).adas)
