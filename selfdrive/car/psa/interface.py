@@ -3,6 +3,8 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car import get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
+TransmissionType = car.CarParams.TransmissionType
+
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
