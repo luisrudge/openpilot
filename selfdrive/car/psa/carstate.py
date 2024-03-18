@@ -74,9 +74,6 @@ class CarState(CarStateBase):
     ret.doorOpen = any([cp.vl['Dat_BSI']['DRIVER_DOOR'], cp.vl['Dat_BSI']['PASSENGER_DOOR']])
     ret.seatbeltUnlatched = cp.vl['RESTRAINTS']['DRIVER_SEATBELT'] != 2  # TODO: check LHD
 
-    # stock signals from camera
-    self.lka_stock_values = cp_cam.vl['LANE_KEEP_ASSIST']
-
     return ret
 
   @staticmethod
@@ -100,10 +97,3 @@ class CarState(CarStateBase):
       ('HS2_DAT7_BSI_612', 10),
     ]
     return CANParser(DBC[CP.carFingerprint]['body'], messages, CanBus(CP).adas)
-
-  @staticmethod
-  def get_cam_can_parser(CP):
-    messages = [
-      ('LANE_KEEP_ASSIST', 20),
-    ]
-    return CANParser(DBC[CP.carFingerprint]['pt'], messages, CanBus(CP).camera)
