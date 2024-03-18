@@ -50,7 +50,7 @@ class CarController(CarControllerBase):
     # TODO: find cruise buttons msg
 
     new_actuators = actuators.copy()
-    new_actuators.steeringAngleDeg = apply_angle
+    new_actuators.steeringAngleDeg = self.apply_angle_last
 
     self.frame += 1
     return new_actuators, can_sends
