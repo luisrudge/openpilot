@@ -22,7 +22,7 @@ class CarControllerParams:
 
 
 @dataclass
-class OpelCarDocs(CarDocs):
+class PSACarDocs(CarDocs):
   package: str = "Adaptive Cruise Control"
   car_parts: CarParts = field(default_factory=CarParts.common([CarHarness.psa_a]))
 
@@ -30,9 +30,9 @@ class OpelCarDocs(CarDocs):
 class CAR(Platforms):
   OPEL_CORSA_F = PlatformConfig(
     "OPEL CORSA F",
-    [OpelCarDocs("Vauxhall Corsa 2020")],
+    [PSACarDocs("Vauxhall Corsa 2020")],
     CarSpecs(mass=1200, wheelbase=2.538, steerRatio=15.0),  # TODO: check steer ratio
-    dbc_dict=dbc_dict('AEE2010_H91_v1p1_pf', None, chassis_dbc='AEE2010_4.35_HS2'),
+    dbc_dict=dbc_dict('AEE2010_H91_v1p1_pf', None, body_dbc='AEE2010_4.35_HS2'),
   )
 
 
