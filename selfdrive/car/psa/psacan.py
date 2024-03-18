@@ -31,9 +31,8 @@ def create_lka_msg(packer, apply_steer: float, frame: int, lat_active: bool, max
   # TODO: hud control for lane departure, status
   values = {
     'TORQUE': max_torque if lat_active else 0,
-    # 'LANE_DEPARTURE': 0,
-    'STATUS': 1 if not lat_active else 0,
-    'ACTIVE': 1 if lat_active else 0,
+    'LANE_DEPARTURE': 0,
+    'STATUS': 2 if lat_active else 0,
     'RAMP': 100 if lat_active else 0,  # TODO
     'ANGLE': clip(apply_steer, -90, 90),  # (-90, 90)
     'COUNTER': frame % 0x10,
