@@ -47,7 +47,7 @@ class CarState(CarStateBase):
     # note: this is just for CC car not ACC right now
     ret.cruiseState.speed = cp_adas.vl['HS2_DAT_MDD_CMD_452']['CONS_LIM_VITESSE_VEH'] * CV.KPH_TO_MS
     ret.cruiseState.enabled = cp_adas.vl['HS2_DAT_MDD_CMD_452']['DDE_ACTIVATION_RVV_ACC'] == 1
-    ret.cruiseState.available = False  # TODO
+    ret.cruiseState.available = True  # TODO
     ret.cruiseState.nonAdaptive = False  # cp_adas.vl['HS2_DAT_MDD_CMD_452']['COCKPIT_GO_ACC_REQUEST'] == 0
     ret.cruiseState.standstill = False  # TODO
     ret.accFaulted = False
