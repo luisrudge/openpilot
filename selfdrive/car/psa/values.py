@@ -32,7 +32,7 @@ class CAR(Platforms):
     "OPEL CORSA F",
     [PSACarDocs("Vauxhall Corsa 2020")],
     CarSpecs(mass=1200, wheelbase=2.538, steerRatio=15.0),  # TODO: check steer ratio
-    dbc_dict=dbc_dict('AEE2010_H91_v1p1_pf', None, body_dbc='AEE2010_4.35_HS2'),
+    dbc_dict=dbc_dict('opel_corsa_f_hs1_generated', None, body_dbc='AEE2010_R3_HS2'),
   )
 
 
