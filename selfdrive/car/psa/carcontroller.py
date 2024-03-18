@@ -2,7 +2,7 @@ from opendbc.can.packer import CANPacker
 from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import apply_std_steer_angle_limits
 from openpilot.selfdrive.car.interfaces import CarControllerBase
-# from openpilot.selfdrive.car.psa import psacan
+from openpilot.selfdrive.car.psa import psacan
 from openpilot.selfdrive.car.psa.values import CarControllerParams
 
 
@@ -42,7 +42,7 @@ class CarController(CarControllerBase):
         apply_angle = CS.out.steeringAngleDeg
         self.lkas_max_torque = 0
 
-      # can_sends.append(psacan.create_lka_msg(self.packer, apply_angle, self.frame, CC.latActive, self.lkas_max_torque))
+      can_sends.append(psacan.create_lka_msg(self.packer, apply_angle, self.frame, CC.latActive, self.lkas_max_torque))
 
       self.apply_angle_last = apply_angle
 

@@ -12,8 +12,8 @@ class CarControllerParams:
   STEER_STEP = 5  # LANE_KEEP_ASSIST, 20Hz
 
   STEER_MAX = 90.0  # Max angle for LKA
-  LKAS_MAX_TORQUE = 100  # TODO: verify
-  STEER_THRESHOLD = 50  # TODO: verify
+  LKAS_MAX_TORQUE = 100  # TODO: verify (max seen is 60, signal max is 2047...)
+  STEER_THRESHOLD = 25  # TODO: verify
 
   STEER_DRIVER_ALLOWANCE = 2  # Driver intervention threshold
 

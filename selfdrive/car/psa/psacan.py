@@ -1,3 +1,4 @@
+from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import CanBusBase
 
 
@@ -27,15 +28,13 @@ def calculate_checksum(dat: bytearray, init: int) -> int:
 
 
 def create_lka_msg(packer, apply_steer: float, frame: int, lat_active: bool, max_torque: int):
+  # TODO: hud control for lane departure, status
   values = {
-    # 'LOW_SPEED': 0,
     'TORQUE': max_torque if lat_active else 0,
-    # 'RIGHT_DEPART': 0,
-    # 'LEFT_DEPART': 0,
-    # 'STATUS': 0,
-    'ACTIVE': int(lat_active),
-    # 'RAMP': 0,
-    'ANGLE': apply_steer,  # (-90, 90)
+    'LANE_DEPARTURE': 0,
+    'STATUS': 2 if lat_active else 0,
+    'RAMP': 100 if lat_active else 0,  # TODO
+    'ANGLE': clip(apply_steer, -90, 90),  # (-90, 90)
     'COUNTER': frame % 0x10,
     'CHECKSUM': 0,
   }
