@@ -27,7 +27,7 @@ def calculate_checksum(dat: bytearray, init: int) -> int:
   return (8 - checksum) & 0xF
 
 
-def create_lka_msg(packer, apply_steer: float, frame: int, lat_active: bool, max_torque: int):
+def create_lka_msg(packer, CP, apply_steer: float, frame: int, lat_active: bool, max_torque: int):
   # TODO: hud control for lane departure, status
   values = {
     'TORQUE': max_torque if lat_active else 0,
@@ -43,4 +43,4 @@ def create_lka_msg(packer, apply_steer: float, frame: int, lat_active: bool, max
   dat = packer.make_can_msg('LANE_KEEP_ASSIST', 0, values)[2]
   values['CHECKSUM'] = calculate_checksum(dat, 0xD)
 
-  return packer.make_can_msg('LANE_KEEP_ASSIST', 0, values)
+  return packer.make_can_msg('LANE_KEEP_ASSIST', CanBus(CP).main, values)
