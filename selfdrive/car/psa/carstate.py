@@ -25,7 +25,7 @@ class CarState(CarStateBase):
     ret.standstill = False  # TODO
 
     # gas
-    ret.gas = cp_adas['HS2_BGE_DYN5_CMM_228']['EFCMNT_PDLE_ACCEL'] / 99.5
+    ret.gas = cp_adas.vl['HS2_BGE_DYN5_CMM_228']['EFCMNT_PDLE_ACCEL'] / 99.5
     ret.gasPressed = ret.gas > 1e-6  # TODO
 
     # brake
@@ -83,7 +83,6 @@ class CarState(CarStateBase):
     messages = [
       ('Dyn4_FRE', 50),
       ('Dyn_ABR', 25),
-      ('HS2_BGE_DYN5_CMM_228', 100),
       ('Dat_BSI', 20),
       ('STEERING_ALT', 100),
       ('STEERING', 100),
@@ -95,6 +94,7 @@ class CarState(CarStateBase):
   @staticmethod
   def get_adas_can_parser(CP):
     messages = [
+      ('HS2_BGE_DYN5_CMM_228', 100),
       ('HS2_DAT_MDD_CMD_452', 20),
       ('HS2_DAT7_BSI_612', 10),
     ]
