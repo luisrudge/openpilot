@@ -1,6 +1,7 @@
 from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.psa.psacan import CanBus
 from openpilot.selfdrive.car.psa.values import DBC, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarStateBase
 
@@ -9,7 +10,7 @@ TransmissionType = car.CarParams.TransmissionType
 
 
 class CarState(CarStateBase):
-  def update(self, cp, cp_cam):
+  def update(self, cp, cp_adas, cp_cam):
     ret = car.CarState.new_message()
 
     # car speed
@@ -65,8 +66,9 @@ class CarState(CarStateBase):
     ret.stockAeb = 0
 
     # button presses
-    ret.leftBlinker = cp.vl['STEERING_COLUMN']['LEFT_INDICATOR']
-    ret.rightBlinker = cp.vl['STEERING_COLUMN']['RIGHT_INDICATOR']
+    blinker = cp_adas.vl['HS2_DAT7_BSI_612']['CDE_CLG_ET_HDC']
+    ret.leftBlinker = blinker == 1
+    ret.rightBlinker = blinker == 2
 
     # lock info
     ret.doorOpen = any([cp.vl['Dat_BSI']['DRIVER_DOOR'], cp.vl['Dat_BSI']['PASSENGER_DOOR']])
@@ -88,11 +90,18 @@ class CarState(CarStateBase):
       ('STEERING_COLUMN', 10),
       ('RESTRAINTS', 10),
     ]
-    return CANParser(DBC[CP.carFingerprint]['pt'], messages, 0)
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, CanBus(CP).main)
+
+  @staticmethod
+  def get_adas_can_parser(CP):
+    messages = [
+      ('HS2_DAT7_BSI_612', 10),
+    ]
+    return CANParser(DBC[CP.carFingerprint]['body'], messages, CanBus(CP).adas)
 
   @staticmethod
   def get_cam_can_parser(CP):
     messages = [
       ('LANE_KEEP_ASSIST', 20),
     ]
-    return CANParser(DBC[CP.carFingerprint]['pt'], messages, 2)
+    return CANParser(DBC[CP.carFingerprint]['pt'], messages, CanBus(CP).camera)
