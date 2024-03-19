@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from cereal import car
-from openpilot.selfdrive.car import CarSpecs, dbc_dict, PlatformConfig, Platforms
+from openpilot.selfdrive.car import AngleRateLimit, CarSpecs, dbc_dict, PlatformConfig, Platforms
 from openpilot.selfdrive.car.docs_definitions import CarDocs, CarHarness, CarParts
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, StdQueries
 
@@ -12,6 +12,8 @@ class CarControllerParams:
   STEER_STEP = 5  # LANE_KEEP_ASSIST, 20Hz
 
   STEER_MAX = 90.0  # Max angle for LKA
+  ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., .8, .15])
+  ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[0., 5., 15.], angle_v=[5., 3.5, 0.4])
   LKAS_MAX_TORQUE = 100  # TODO: verify (max seen is 60, signal max is 2047...)
   STEER_THRESHOLD = 25  # TODO: verify
 
