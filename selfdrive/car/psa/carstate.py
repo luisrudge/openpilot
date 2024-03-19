@@ -20,7 +20,7 @@ class CarState(CarStateBase):
       cp.vl['Dyn4_FRE']['P265_VehV_VPsvValWhlBckL'],
       cp.vl['Dyn4_FRE']['P266_VehV_VPsvValWhlBckR'],
     )
-    ret.vEgoRaw = cp.vl['Dyn_ABR']['P010_Com_v'] * CV.KPH_TO_MS  # also ['HS2_DYN_ABR_38D']['VITESSE_VEHICULE_ROUES']
+    ret.vEgoRaw = cp_adas.vl['HS2_DYN_ABR_38D']['VITESSE_VEHICULE_ROUES'] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     # ret.yawRate = cp.vl['Dyn2_FRE']['YAW_RATE'] * CV.DEG_TO_RAD  # FIXME
     ret.standstill = False  # TODO
@@ -80,7 +80,6 @@ class CarState(CarStateBase):
   def get_can_parser(CP):
     messages = [
       ('Dyn4_FRE', 50),
-      ('Dyn_ABR', 25),
       ('Dat_BSI', 20),
       ('STEERING_ALT', 100),
       ('STEERING', 100),
@@ -92,6 +91,7 @@ class CarState(CarStateBase):
   @staticmethod
   def get_adas_can_parser(CP):
     messages = [
+      ('HS2_DYN_ABR_38D', 25),
       ('HS2_BGE_DYN5_CMM_228', 100),
       ('HS2_DAT_MDD_CMD_452', 20),
       ('HS2_DAT7_BSI_612', 10),
