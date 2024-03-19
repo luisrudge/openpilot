@@ -22,12 +22,12 @@ class CarState(CarStateBase):
     )
     ret.vEgoRaw = cp_adas.vl['HS2_DYN_ABR_38D']['VITESSE_VEHICULE_ROUES'] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    ret.yawRate = cp.vl['HS2_DYN_UCF_MDD_32D']['VITESSE_LACET_BRUTE'] * CV.DEG_TO_RAD
+    ret.yawRate = cp_adas.vl['HS2_DYN_UCF_MDD_32D']['VITESSE_LACET_BRUTE'] * CV.DEG_TO_RAD
     ret.standstill = False  # TODO
 
     # gas
     ret.gas = cp_adas.vl['HS2_BGE_DYN5_CMM_228']['EFCMNT_PDLE_ACCEL'] / 99.5
-    ret.gasPressed = ret.gas > 1e-6  # TODO
+    ret.gasPressed = ret.gas > 0  # TODO
 
     # brake
     # ret.brake = cp.vl['Dyn2_FRE']['BRAKE_PRESSURE'] / 1500.  # FIXME
