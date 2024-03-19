@@ -52,6 +52,7 @@ class CarController(CarControllerBase):
 
     new_actuators = actuators.copy()
     new_actuators.steeringAngleDeg = self.apply_angle_last
+    new_actuators.steer = self.lkas_max_torque
 
     self.frame += 1
     return new_actuators, can_sends
