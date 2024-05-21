@@ -13,7 +13,7 @@ Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 """
 Volvo Electronic Control Units abbreviations and network topology
-Platforms C1/EUCD
+Platforms C1MCA/EUCD
 
 Three main CAN network buses
   1. Powertrain
@@ -56,6 +56,7 @@ class SteerDirection(IntEnum):
 
 
 class CarControllerParams:
+  # EUCD: Torque limit for steering is 50 CAN units
   ANGLE_RATE_LIMIT_UP = AngleRateLimit(speed_bp=[0., 8.33, 13.89, 19.44, 25., 30.55, 36.1], angle_v=[2., 1.2, .25, .20, .15, .10, .10])
   ANGLE_RATE_LIMIT_DOWN = AngleRateLimit(speed_bp=[0., 8.33, 13.89, 19.44, 25., 30.55, 36.1], angle_v=[2., 1.2, .25, .20, .15, .10, .10])
 
@@ -64,12 +65,12 @@ class CarControllerParams:
   # Increase to 12 is probably a good tradeoff between false triggers
   # and detecting fault.
   # Going above this threshold triggers steerFaultTemporary.
-  # *2 becuase carState runs in 100Hz.
+  # *2 because carState runs in 100Hz.
   N_ZERO_TRQ = 12*2
 
   # EUCD
   # When changing steer direction steering request need to be blocked.
-  # Otherwise servo wont "listen" to the request.
+  # Otherwise servo won't "listen" to the request.
   # This calibration sets the number of samples to block steering request.
   BLOCK_LEN = 8
   # When close to desired steering angle, don't change steer direction inside deadzone.
@@ -89,7 +90,7 @@ class CarControllerParams:
 
 
 @dataclass
-class VolvoPlatformConfig(PlatformConfig):
+class VolvoEUCDPlatformConfig(PlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('volvo_v60_2015_pt', None))
 
 
@@ -107,7 +108,7 @@ class VolvoCarSpecs(CarSpecs):
 
 
 class CAR(Platforms):
-  VOLVO_V60 = VolvoPlatformConfig(
+  VOLVO_V60 = VolvoEUCDPlatformConfig(
     [VolvoCarDocs("Volvo V60")],
     VolvoCarSpecs(mass=1750, wheelbase=2.776),
   )

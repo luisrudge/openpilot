@@ -2,21 +2,16 @@ from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.volvo.values import DBC, VolvoFlags
+from openpilot.selfdrive.car.volvo.values import DBC
 
 
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
-
-    # C1
     self.cruiseState_enabled_prev = False
     self.count_zero_steeringTorque = 0
 
   def update(self, cp, cp_cam):
-    if self.CP.flags & VolvoFlags.C1:
-      return self.update_c1(cp, cp_cam)
-
     ret = car.CarState.new_message()
 
     # car speed
@@ -85,18 +80,8 @@ class CarState(CarStateBase):
 
     return ret
 
-  def update_c1(self, cp, cp_cam):
-    ret = car.CarState.new_message()
-
-    # TODO
-
-    return ret
-
   @staticmethod
   def get_can_parser(CP):
-    if CP.flags & VolvoFlags.C1:
-      return CarState.get_can_parser_c1(CP)
-
     messages = [
       # msg, freq
       ("VehicleSpeed1", 50),
@@ -115,22 +100,6 @@ class CarState(CarStateBase):
       ("FSM0", 100),
       ("FSM1", 50),
       ("FSM3", 50),
-    ]
-
-    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
-
-  @staticmethod
-  def get_can_parser_c1(CP):
-    messages = [
-      # TODO
-    ]
-
-    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
-
-  @staticmethod
-  def get_cam_can_parser_c1(CP):
-    messages = [
-      # TODO
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)

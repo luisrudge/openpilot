@@ -9,11 +9,11 @@ def create_button_msg(packer, resume=False, cancel=False, bus=0):
   return packer.make_can_msg("CCButtons", bus, msg)
 
 
-def create_acc_state_msg(packer, bus=0):
+def create_acc_state_msg(packer):
   msg = {
     "ACC_Check": 1,
   }
-  return packer.make_can_msg("FSM3", bus, msg)
+  return packer.make_can_msg("FSM3", 0, msg)
 
 
 def create_lkas_state_msg(packer, steering_angle: float, stock_values: dict):
