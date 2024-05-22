@@ -47,8 +47,8 @@ Extended CAN
 class SteerDirection(IntEnum):
   """Constants for LKASteerDirection.
 
-  Normally, the car uses RIGHT and LEFT. However, it's possible to use BOTH,
-  which in C1 platforms. Servo then accepts steering in both directions."""
+  On the EUCD platform, we need to wait 8 frames when switching from LEFT to RIGHT
+  and vice versa. On the C1MCA platform, we can instead use BOTH."""
   NONE = 0
   RIGHT = 1
   LEFT = 2

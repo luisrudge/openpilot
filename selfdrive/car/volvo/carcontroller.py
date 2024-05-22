@@ -41,9 +41,10 @@ class CarController(CarControllerBase):
     if self.frame % 2 == 0:
       if CC.latActive and CS.out.vEgo > self.CP.minSteerSpeed:
         apply_steer = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_steer_prev, CS.out.vEgoRaw, CarControllerParams)
-        apply_steer_dir = SteerDirection.LEFT if apply_steer > 0 else SteerDirection.RIGHT
 
-        error = CS.out.steeringAngleDeg - self.apply_steer
+        error = CS.out.steeringAngleDeg - apply_steer
+        apply_steer_dir = SteerDirection.RIGHT if error > 0 else SteerDirection
+
         error_with_deadzone = 0 if abs(error) < CarControllerParams.DEADZONE else error
 
         # Update prev with desired if just enabled.
@@ -72,8 +73,8 @@ class CarController(CarControllerBase):
 
       can_sends.append(volvocan.create_lka_msg(self.packer, apply_steer, apply_steer_dir))
 
-      self.apply_steer_prev = self.apply_steer
-      self.apply_steer_dir_prev = self.apply_steer_dir
+      self.apply_steer_prev = apply_steer
+      self.apply_steer_dir_prev = apply_steer_dir
       self.latActive_prev = CC.latActive
 
       # Manipulate data from servo to FSM
