@@ -25,7 +25,7 @@ class CarState(CarStateBase):
 
     # brake pedal
     ret.brake = 0.
-    ret.brakePressed = False  # ! TODO
+    ret.brakePressed = cp.vl["EngineData"]["BrakePressed"]
 
     # steering
     ret.steeringAngleDeg = cp.vl["PSCM1"]["SteeringAngleServo"]
@@ -86,6 +86,7 @@ class CarState(CarStateBase):
       # msg, freq
       ("VehicleSpeed1", 50),
       ("AccPedal", 100),
+      ("EngineData", 67),
       ("PSCM1", 50),
       ("ACC_Speed", 50),
       ("MiscCarInfo", 25),
