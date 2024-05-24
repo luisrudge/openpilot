@@ -25,7 +25,7 @@ class CarState(CarStateBase):
 
     # brake pedal
     ret.brake = cp.vl["BrakePedal"]["BrakePressure"]
-    ret.brakePressed = cp.vl["EngineData"]["BrakePressed"]
+    ret.brakePressed = bool(cp.vl["EngineData"]["BrakePressed"])
 
     # steering
     ret.steeringAngleDeg = cp.vl["PSCM1"]["SteeringAngleServo"]
