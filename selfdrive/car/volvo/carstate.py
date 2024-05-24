@@ -51,7 +51,7 @@ class CarState(CarStateBase):
     ret.cruiseState.speed = cp.vl["ACC_Speed"]["ACC_Speed"] * CV.KPH_TO_MS
     ret.cruiseState.available = cp_cam.vl["FSM0"]["ACCStatus"] in (2, 6, 7)
     ret.cruiseState.enabled = cp_cam.vl["FSM0"]["ACCStatus"] in (6, 7)
-    # ret.cruiseState.standstill = cp_cam.vl["FSM3"]["ACC_Standstill"] == 1
+    ret.cruiseState.standstill = cp_cam.vl["FSM3"]["ACC_Standstill"] == 1
     ret.cruiseState.nonAdaptive = False  # TODO
     ret.accFaulted = False
     self.acc_distance = cp_cam.vl["FSM1"]["ACC_Distance"]
