@@ -71,7 +71,7 @@ class CarController(CarControllerBase):
         apply_steer = 0
         apply_steer_dir = SteerDirection.NONE
 
-      can_sends.append(volvocan.create_lka_msg(self.packer, apply_steer, apply_steer_dir))
+      can_sends.append(volvocan.create_lka_msg(self.packer, apply_steer, int(apply_steer_dir)))
 
       self.apply_steer_prev = apply_steer
       self.apply_steer_dir_prev = apply_steer_dir
