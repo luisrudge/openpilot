@@ -98,8 +98,8 @@ class CarController(CarControllerBase):
         self.waiting = False
         self.last_resume_frame = self.frame
 
-    new_actuators = actuators.copy()
-    new_actuators.steeringAngleDeg = self.apply_steer
+    new_actuators = actuators.as_builder()
+    new_actuators.steeringAngleDeg = self.apply_steer_prev
 
     self.frame += 1
     return new_actuators, can_sends
