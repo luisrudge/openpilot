@@ -43,7 +43,7 @@ class CarController(CarControllerBase):
         apply_steer = apply_std_steer_angle_limits(actuators.steeringAngleDeg, self.apply_steer_prev, CS.out.vEgoRaw, CarControllerParams)
 
         error = CS.out.steeringAngleDeg - apply_steer
-        apply_steer_dir = SteerDirection.RIGHT if error > 0 else SteerDirection
+        apply_steer_dir = SteerDirection.RIGHT if error > 0 else SteerDirection.LEFT
 
         error_with_deadzone = 0 if abs(error) < CarControllerParams.DEADZONE else error
 
