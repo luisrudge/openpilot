@@ -25,7 +25,7 @@ def create_lkas_state_msg(packer, steering_angle: float, stock_values: dict):
     "byte0": stock_values["byte0"],
     "byte4": stock_values["byte4"],
     "byte7": stock_values["byte7"],
-    "LKAActive": stock_values["LKAActive"] & 0xF5,
+    "LKAActive": int(stock_values["LKAActive"]) & 0xF5,
     "SteeringWheelRateOfChange": stock_values["SteeringWheelRateOfChange"],
   }
   return packer.make_can_msg("PSCM1", 2, msg)
