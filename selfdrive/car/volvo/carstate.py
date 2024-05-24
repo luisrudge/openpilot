@@ -24,7 +24,7 @@ class CarState(CarStateBase):
     ret.gasPressed = ret.gas > 0.1
 
     # brake pedal
-    ret.brake = 0.
+    ret.brake = cp.vl["BrakePedal"]["BrakePressure"]
     ret.brakePressed = cp.vl["EngineData"]["BrakePressed"]
 
     # steering
@@ -86,6 +86,7 @@ class CarState(CarStateBase):
       # msg, freq
       ("VehicleSpeed1", 50),
       ("AccPedal", 100),
+      ("BrakePedal", 50),
       ("EngineData", 67),
       ("PSCM1", 50),
       ("ACC_Speed", 50),
