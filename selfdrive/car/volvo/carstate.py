@@ -2,30 +2,14 @@ from cereal import car
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.interfaces import CarStateBase
-from openpilot.selfdrive.car.volvo.values import DBC, Button, CarControllerParams
+from openpilot.selfdrive.car.volvo.values import DBC
 
 
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
-    self.CCP = CarControllerParams(CP)
-    self.button_states = {button.event_type: False for button in self.CCP.BUTTONS}
     self.cruiseState_enabled_prev = False
     self.count_zero_steeringTorque = 0
-
-  def create_button_events(self, cp, buttons: list[Button]):
-    button_events = []
-
-    for button in buttons:
-      state = cp.vl[button.can_addr][button.can_msg] in button.values
-      if self.button_states[button.event_type] != state:
-        event = car.CarState.ButtonEvent.new_message()
-        event.type = button.event_type
-        event.pressed = state
-        button_events.append(event)
-      self.button_states[button.event_type] = state
-
-    return button_events
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -80,7 +64,6 @@ class CarState(CarStateBase):
     ret.stockAeb = False
 
     # button presses
-    ret.buttonEvents = self.create_button_events(cp, self.CCP.BUTTONS)
     ret.leftBlinker = cp.vl["MiscCarInfo"]["TurnSignal"] == 1
     ret.rightBlinker = cp.vl["MiscCarInfo"]["TurnSignal"] == 3
 

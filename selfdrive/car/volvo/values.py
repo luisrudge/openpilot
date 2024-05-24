@@ -1,4 +1,3 @@
-from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import IntEnum
 
@@ -9,7 +8,6 @@ from openpilot.selfdrive.car.docs_definitions import CarHarness, CarDocs, CarPar
 from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, Request, p16
 
 Ecu = car.CarParams.Ecu
-Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 """
 Volvo Electronic Control Units abbreviations and network topology
@@ -79,14 +77,7 @@ class CarControllerParams:
   DEADZONE = 0.1
 
   def __init__(self, CP):
-    self.BUTTONS = [
-      Button(car.CarState.ButtonEvent.Type.altButton1, "CCButtons", "ACCOnOffBtn", [1]),
-      Button(car.CarState.ButtonEvent.Type.setCruise, "CCButtons", "ACCSetBtn", [1]),
-      Button(car.CarState.ButtonEvent.Type.resumeCruise, "CCButtons", "ACCResumeBtn", [1]),
-      Button(car.CarState.ButtonEvent.Type.accelCruise, "CCButtons", "ACCSetBtn", [1]),
-      Button(car.CarState.ButtonEvent.Type.decelCruise, "CCButtons", "ACCMinusBtn", [1]),
-      # Button(car.CarState.ButtonEvent.Type.cancel, "CCButtons", "ACCStopBtn", [1]),
-    ]
+    pass
 
 
 @dataclass
