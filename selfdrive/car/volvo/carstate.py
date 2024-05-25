@@ -29,7 +29,7 @@ class CarState(CarStateBase):
 
     # steering
     ret.steeringAngleDeg = cp.vl["PSCM1"]["SteeringAngleServo"]
-    ret.steeringTorque = cp.vl["PSCM1"]["LKATorque"]
+    ret.steeringTorqueEps = cp.vl["PSCM1"]["LKATorque"]
     ret.steeringPressed = False  # TODO
 
     # Check if servo stops responding when ACC is active
