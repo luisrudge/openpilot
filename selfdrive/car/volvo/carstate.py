@@ -68,8 +68,8 @@ class CarState(CarStateBase):
     ret.rightBlinker = cp.vl["MiscCarInfo"]["TurnSignal"] == 3
 
     # lock info
-    ret.doorOpen = False  # TODO
-    ret.seatbeltUnlatched = False
+    ret.doorOpen = not all(cp.vl["Doors"]["DriverDoorClosed"], cp.vl["Doors"]["PassengerDoorClosed"])
+    ret.seatbeltUnlatched = False  # TODO
 
     # Store info from servo message PSCM1
     # FSM (camera) checks if LKAActive & LKATorque active when not requested
@@ -90,6 +90,7 @@ class CarState(CarStateBase):
       ("PSCM1", 50),
       ("ACC_Speed", 50),
       ("MiscCarInfo", 25),
+      ("Doors", 20),
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
