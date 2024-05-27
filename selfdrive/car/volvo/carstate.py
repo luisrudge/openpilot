@@ -39,7 +39,7 @@ class CarState(CarStateBase):
         self.count_zero_steeringTorque = 0
 
       # Count up when no torque from servo detected
-      if ret.steeringTorque == 0:
+      if ret.steeringTorqueEps == 0:
         self.count_zero_steeringTorque += 1
       else:
         self.count_zero_steeringTorque = 0
