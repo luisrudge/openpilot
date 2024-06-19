@@ -69,8 +69,13 @@ jobs:
   build:
     strategy:
       matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: macos-latest
+            arch: aarch64
         arch: ${{ fromJson('["x86_64"]') }} # TODO: Re-add build test for aarch64 once we switched to ubuntu-2404
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
       with:
